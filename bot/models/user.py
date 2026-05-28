@@ -1,0 +1,45 @@
+from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Boolean, Date
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from database.db import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    telegram_id = Column(BigInteger, unique=True, nullable=False)
+    full_name = Column(String(255), nullable=True)
+    username = Column(String(255), nullable=True)
+
+    # Core score (legacy — kept for back-compat)
+    streak = Column(Integer, default=0)
+    total_score = Column(Integer, default=0)
+
+    # ── Gamification engine ──────────────────────────────
+    xp = Column(Integer, default=0)
+    level = Column(Integer, default=1)
+    longest_streak = Column(Integer, default=0)
+    last_completed_date = Column(Date, nullable=True)
+    streak_freezes = Column(Integer, default=0)
+    discipline_score = Column(Integer, default=50)  # 0..100
+    weekly_xp = Column(Integer, default=0)
+    perfect_days = Column(Integer, default=0)
+
+    # ── Identity / monetization ──────────────────────────
+    is_premium = Column(Boolean, default=False)
+    premium_until = Column(DateTime, nullable=True)
+    onboarded = Column(Boolean, default=False)
+    rank_title = Column(String(40), nullable=True)
+    avatar_emoji = Column(String(8), default="🌱")
+
+    # ── System ───────────────────────────────────────────
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_active = Column(DateTime, default=datetime.utcnow)
+
+    plans = relationship("Plan", back_populates="user", cascade="all, delete")
+    score_logs = relationship("ScoreLog", back_populates="user", cascade="all, delete")
+    goals = relationship("Goal", back_populates="user", cascade="all, delete")
+    achievements = relationship("Achievement", back_populates="user", cascade="all, delete")
+    checkins = relationship("DailyCheckin", back_populates="user", cascade="all, delete")

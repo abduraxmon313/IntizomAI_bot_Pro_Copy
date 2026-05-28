@@ -1,0 +1,335 @@
+"""
+Daily retention loop — morning, midday, evening, late-night, inactivity.
+
+All times are Tashkent. Each job is wrapped so a single user's failure
+never blocks the rest.
+"""
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timedelta
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import and_, select
+
+from bot.config import (
+    PENDING_CHECK_HOUR,
+    PENDING_CHECK_MINUTE,
+    SUMMARY_HOUR,
+    SUMMARY_MINUTE,
+    TIMEZONE,
+)
+from bot.models.plan import Plan, PlanStatus
+from bot.models.user import User
+from bot.services.coach_service import (
+    message_for_comeback,
+    message_for_evening,
+    message_for_morning,
+    message_for_streak_warning,
+)
+from database.db import AsyncSessionLocal
+
+logger = logging.getLogger(__name__)
+scheduler = AsyncIOScheduler(timezone=str(TIMEZONE))
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_plan_notifications(bot):
+    """Every minute — fire reminders for plans whose time has come."""
+    async with AsyncSessionLocal() as session:
+        from bot.services.plan_service import get_pending_plans_to_notify
+        plans = await get_pending_plans_to_notify(session)
+
+        for plan in plans:
+            user = (await session.execute(
+                select(User).where(User.id == plan.user_id)
+            )).scalar_one_or_none()
+            if not user:
+                continue
+
+            from bot.keyboards.plan_keys import done_failed_keyboard
+
+            try:
+                await bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=(
+                        f"⏰ <b>Vaqt bo'ldi!</b>\n\n"
+                        f"📌 <b>{plan.title}</b>\n"
+                        f"🕐 {plan.scheduled_time}\n\n"
+                        f"✅ Bajarsang <b>+{plan.score_value} XP</b>\n"
+                        f"❌ Aks holda streakingga ta'sir qiladi"
+                    ),
+                    parse_mode="HTML",
+                    reply_markup=done_failed_keyboard(plan.id),
+                )
+                plan.notified_at = datetime.now(TIMEZONE).replace(tzinfo=None)
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                logger.warning(f"Notification error: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_morning_nudge(bot):
+    """07:00 — energising, identity-affirming."""
+    async with AsyncSessionLocal() as session:
+        users = (await session.execute(
+            select(User).where(User.is_active == True)
+        )).scalars().all()
+
+        for user in users:
+            try:
+                msg = message_for_morning()
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📋 Bugungi rejam", callback_data="my_plans")],
+                    [InlineKeyboardButton(text="➕ Reja qo'sh", callback_data="add_plan")],
+                ])
+                await bot.send_message(
+                    user.telegram_id, msg, parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Morning nudge skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_streak_warning(bot):
+    """20:00 — warn users with active streak who haven't completed yet today."""
+    async with AsyncSessionLocal() as session:
+        today = datetime.now(TIMEZONE).date()
+
+        users = (await session.execute(
+            select(User).where(
+                and_(User.is_active == True, User.streak > 1)
+            )
+        )).scalars().all()
+
+        for user in users:
+            if user.last_completed_date == today:
+                continue
+            try:
+                msg = message_for_streak_warning(user.streak)
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔥 Streakni saqlash", callback_data="my_plans")],
+                ])
+                await bot.send_message(
+                    user.telegram_id, msg, parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Streak warn skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_inactivity_comeback(bot):
+    """Daily 11:00 — reach out to users idle for 3+ days."""
+    async with AsyncSessionLocal() as session:
+        today = datetime.now(TIMEZONE).date()
+
+        users = (await session.execute(
+            select(User).where(User.is_active == True)
+        )).scalars().all()
+
+        for user in users:
+            last = user.last_completed_date
+            if last is None:
+                continue
+            days_idle = (today - last).days
+            # Only nudge at exact 3-day and 7-day marks (avoid spamming)
+            if days_idle not in (3, 7, 14):
+                continue
+            try:
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="🔄 Qaytib boshlash", callback_data="add_plan")],
+                ])
+                await bot.send_message(
+                    user.telegram_id,
+                    message_for_comeback() +
+                    f"\n\n💎 Sening eng yaxshi streaking: <b>{user.longest_streak} kun</b>",
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Comeback skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_evening_reflection(bot):
+    """21:00 — invite reflection."""
+    async with AsyncSessionLocal() as session:
+        users = (await session.execute(
+            select(User).where(User.is_active == True)
+        )).scalars().all()
+
+        for user in users:
+            try:
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="📊 Bugungi hisobot", callback_data="report")],
+                ])
+                await bot.send_message(
+                    user.telegram_id,
+                    message_for_evening(),
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Evening skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def send_daily_summary(bot):
+    """23:59 — daily summary + streak settlement."""
+    async with AsyncSessionLocal() as session:
+        today = datetime.now(TIMEZONE).date()
+
+        users = (await session.execute(
+            select(User).where(User.is_active == True)
+        )).scalars().all()
+
+        for user in users:
+            plans = (await session.execute(
+                select(Plan).where(
+                    and_(Plan.user_id == user.id, Plan.plan_date == today)
+                )
+            )).scalars().all()
+
+            if not plans:
+                continue
+
+            done = [p for p in plans if p.status == PlanStatus.done]
+            failed = [p for p in plans if p.status == PlanStatus.failed]
+            pending = [p for p in plans if p.status == PlanStatus.pending]
+
+            # Streak loss only if user did literally nothing today AND had plans
+            had_zero_done = len(done) == 0
+            if had_zero_done and (failed or pending):
+                # auto-burn freeze if available, else reset
+                if (user.streak_freezes or 0) > 0 and (user.streak or 0) > 0:
+                    user.streak_freezes -= 1
+                else:
+                    user.streak = 0
+
+            # Reset weekly_xp on Sunday
+            if today.weekday() == 6:
+                user.weekly_xp = 0
+
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="📊 Batafsil hisobot", callback_data="report")]
+            ])
+
+            try:
+                await bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=(
+                        f"🌙 <b>Kunlik hisobot</b>\n\n"
+                        f"✅ Bajarildi: <b>{len(done)} ta</b>\n"
+                        f"❌ Bajarilmadi: <b>{len(failed)} ta</b>\n"
+                        f"⏳ Eslatilmadi: <b>{len(pending)} ta</b>\n\n"
+                        f"⭐ XP: <b>{user.xp or 0}</b>\n"
+                        f"🔥 Streak: <b>{user.streak} kun</b>\n"
+                        f"💎 Discipline: <b>{user.discipline_score or 50}/100</b>"
+                    ),
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Summary skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def check_pending_plans(bot):
+    """23:00 — last call for pending plans."""
+    async with AsyncSessionLocal() as session:
+        today = datetime.now(TIMEZONE).date()
+        pending_plans = (await session.execute(
+            select(Plan).where(
+                and_(
+                    Plan.status == PlanStatus.pending,
+                    Plan.plan_date == today,
+                )
+            )
+        )).scalars().all()
+
+        for plan in pending_plans:
+            user = (await session.execute(
+                select(User).where(User.id == plan.user_id)
+            )).scalar_one_or_none()
+            if not user:
+                continue
+
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="✅ Bajardim", callback_data=f"done_{plan.id}"),
+                    InlineKeyboardButton(text="❌ Bajarmadim", callback_data=f"failed_{plan.id}"),
+                ],
+                [InlineKeyboardButton(text="📅 Ertaga", callback_data=f"tomorrow_{plan.id}")],
+            ])
+
+            try:
+                await bot.send_message(
+                    chat_id=user.telegram_id,
+                    text=(
+                        f"🌙 <b>Kun tugamoqda</b>\n\n"
+                        f"📌 <b>{plan.title}</b>\n"
+                        f"{f'🕐 {plan.scheduled_time}' if plan.scheduled_time else '🕐 Vaqtsiz'}\n\n"
+                        f"Bu rejani bajardingmi?"
+                    ),
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Pending check skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+def start_scheduler(bot):
+    tz = str(TIMEZONE)
+
+    # every minute — fire due reminders
+    scheduler.add_job(
+        send_plan_notifications,
+        trigger=CronTrigger(minute="*", timezone=tz),
+        args=[bot], id="plan_notifications",
+    )
+    # 07:00 — morning nudge
+    scheduler.add_job(
+        send_morning_nudge,
+        trigger=CronTrigger(hour=7, minute=0, timezone=tz),
+        args=[bot], id="morning_nudge",
+    )
+    # 11:00 — comeback nudge for idle users
+    scheduler.add_job(
+        send_inactivity_comeback,
+        trigger=CronTrigger(hour=11, minute=0, timezone=tz),
+        args=[bot], id="comeback_nudge",
+    )
+    # 20:00 — streak warning
+    scheduler.add_job(
+        send_streak_warning,
+        trigger=CronTrigger(hour=20, minute=0, timezone=tz),
+        args=[bot], id="streak_warning",
+    )
+    # 21:00 — evening reflection prompt
+    scheduler.add_job(
+        send_evening_reflection,
+        trigger=CronTrigger(hour=21, minute=0, timezone=tz),
+        args=[bot], id="evening_reflection",
+    )
+    # 23:00 — pending plan check
+    scheduler.add_job(
+        check_pending_plans,
+        trigger=CronTrigger(
+            hour=PENDING_CHECK_HOUR, minute=PENDING_CHECK_MINUTE, timezone=tz,
+        ),
+        args=[bot], id="pending_check",
+    )
+    # 23:59 — daily summary + streak settlement
+    scheduler.add_job(
+        send_daily_summary,
+        trigger=CronTrigger(
+            hour=SUMMARY_HOUR, minute=SUMMARY_MINUTE, timezone=tz,
+        ),
+        args=[bot], id="daily_summary",
+    )
+    scheduler.start()

@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Intizom AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overscroll-behavior:none;transition:background .5s ease,color .3s ease;padding-bottom:110px;position:relative}
+:root,[data-theme="default"]{--primary:#14b8a6;--primary-2:#06b6d4;--primary-soft:rgba(20,184,166,.12);--accent:#22d3ee;--grad:linear-gradient(135deg,#14b8a6 0%,#06b6d4 50%,#0891b2 100%);--grad-soft:linear-gradient(135deg,rgba(20,184,166,.15),rgba(6,182,212,.15))}
+[data-theme="sprout"]{--primary:#22c55e;--primary-2:#16a34a;--primary-soft:rgba(34,197,94,.12);--accent:#84cc16;--grad:linear-gradient(135deg,#22c55e 0%,#16a34a 50%,#15803d 100%);--grad-soft:linear-gradient(135deg,rgba(34,197,94,.15),rgba(132,204,22,.15))}
+[data-theme="spectrum"]{--primary:#ec4899;--primary-2:#8b5cf6;--primary-soft:rgba(236,72,153,.12);--accent:#f59e0b;--grad:linear-gradient(135deg,#f43f5e 0%,#ec4899 25%,#8b5cf6 50%,#3b82f6 75%,#06b6d4 100%);--grad-soft:linear-gradient(135deg,rgba(236,72,153,.18),rgba(139,92,246,.18))}
+[data-theme="gamma"]{--primary:#a855f7;--primary-2:#7c3aed;--primary-soft:rgba(168,85,247,.14);--accent:#c084fc;--grad:linear-gradient(135deg,#a855f7 0%,#7c3aed 50%,#6d28d9 100%);--grad-soft:linear-gradient(135deg,rgba(168,85,247,.18),rgba(124,58,237,.18))}
+[data-theme="atmosphere"]{--primary:#3b82f6;--primary-2:#0ea5e9;--primary-soft:rgba(59,130,246,.12);--accent:#60a5fa;--grad:linear-gradient(135deg,#0ea5e9 0%,#3b82f6 50%,#6366f1 100%);--grad-soft:linear-gradient(135deg,rgba(14,165,233,.15),rgba(99,102,241,.15))}
+[data-theme="gold"]{--primary:#d4a017;--primary-2:#b8860b;--primary-soft:rgba(212,160,23,.14);--accent:#f5d76e;--grad:linear-gradient(135deg,#f5d76e 0%,#d4a017 50%,#9a7209 100%);--grad-soft:linear-gradient(135deg,rgba(245,215,110,.20),rgba(212,160,23,.20))}
+:root{--bg:#f6f8fb;--bg-2:#ffffff;--surface:rgba(255,255,255,.72);--surface-2:rgba(255,255,255,.95);--border:rgba(15,23,42,.08);--text:#0f172a;--text-2:#475569;--text-3:#94a3b8;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--shadow-sm:0 1px 2px rgba(15,23,42,.04),0 1px 6px rgba(15,23,42,.04);--shadow-md:0 4px 16px rgba(15,23,42,.06),0 2px 6px rgba(15,23,42,.04);--shadow-lg:0 16px 40px rgba(15,23,42,.08),0 6px 16px rgba(15,23,42,.06);--glow:0 8px 28px var(--primary-soft);--blur-bg:rgba(246,248,251,.78)}
+[data-mode="dark"]{--bg:#0a0f1e;--bg-2:#0f172a;--surface:rgba(20,28,48,.65);--surface-2:rgba(28,38,60,.92);--border:rgba(255,255,255,.08);--text:#f1f5f9;--text-2:#cbd5e1;--text-3:#64748b;--shadow-sm:0 1px 2px rgba(0,0,0,.3);--shadow-md:0 6px 20px rgba(0,0,0,.35);--shadow-lg:0 20px 50px rgba(0,0,0,.45);--glow:0 10px 32px rgba(20,184,166,.25);--blur-bg:rgba(10,15,30,.78)}
+body::before,body::after{content:'';position:fixed;border-radius:50%;filter:blur(80px);opacity:.35;pointer-events:none;z-index:0;animation:float 18s ease-in-out infinite}
+body::before{width:380px;height:380px;top:-100px;right:-100px;background:var(--grad)}
+body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--grad);animation-delay:-9s;opacity:.25}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-30px) scale(1.1)}}
+.app{position:relative;z-index:1;max-width:520px;margin:0 auto;padding:16px 16px 20px}
+.page{display:none;animation:pageIn .45s cubic-bezier(.22,1,.36,1)}
+.page.active{display:block}
+@keyframes pageIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:4px 2px}
+.hdr-greet h1{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.hdr-greet p{font-size:13px;color:var(--text-2);margin-top:2px}
+.wave{display:inline-block;animation:wave 2.4s ease-in-out infinite;transform-origin:70% 70%}
+@keyframes wave{0%,60%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%{transform:rotate(-8deg)}40%{transform:rotate(14deg)}50%{transform:rotate(-4deg)}}
+.hdr-actions{display:flex;align-items:center;gap:10px}
+.mode-btn{width:44px;height:44px;border-radius:14px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;color:var(--primary);font-size:22px;transition:transform .35s cubic-bezier(.34,1.56,.64,1),background .3s;box-shadow:var(--shadow-sm)}
+.mode-btn:active{transform:scale(.88) rotate(-25deg)}
+.mode-btn .ic{display:inline-block;transition:transform .5s cubic-bezier(.34,1.56,.64,1)}
+.hero{background:var(--grad);color:#fff;border-radius:22px;padding:20px;box-shadow:var(--glow);position:relative;overflow:hidden;margin-bottom:16px}
+.hero::before{content:'';position:absolute;top:-40%;right:-20%;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.18);filter:blur(20px);animation:float 12s ease-in-out infinite}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:1}
+.hero-left .lbl{font-size:12px;opacity:.85;text-transform:uppercase;letter-spacing:1.2px}
+.hero-left .val{font-size:38px;font-weight:800;line-height:1;margin-top:6px}
+.hero-left .sub{font-size:12px;opacity:.85;margin-top:4px}
+.hero-right{text-align:right}
+.hero-right .streak{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.22);backdrop-filter:blur(8px);padding:8px 12px;border-radius:999px;font-weight:600;font-size:13px}
+.hero-progress{position:relative;z-index:1;margin-top:16px;height:8px;background:rgba(255,255,255,.22);border-radius:999px;overflow:hidden}
+.hero-progress>i{display:block;height:100%;background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));border-radius:999px;transition:width 1s cubic-bezier(.22,1,.36,1);box-shadow:0 0 16px rgba(255,255,255,.6)}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.mini-stat{background:var(--surface);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:16px;padding:12px 10px;text-align:center;transition:transform .25s}
+.mini-stat:active{transform:scale(.96)}
+.mini-stat .ic{font-size:18px;margin-bottom:4px}
+.mini-stat .v{font-size:18px;font-weight:800;color:var(--primary)}
+.mini-stat .l{font-size:10.5px;color:var(--text-2);margin-top:2px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin:22px 4px 12px}
+.section-title h2{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.plan{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;animation:slideIn .4s ease both;transition:transform .2s,background .3s}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.plan:active{transform:scale(.98)}
+.plan .cbx{width:26px;height:26px;border-radius:8px;border:2px solid var(--text-3);flex-shrink:0;display:grid;place-items:center;cursor:pointer;transition:all .25s;font-size:14px;font-weight:700}
+.plan .cbx.done{background:var(--grad);border-color:transparent;color:#fff;box-shadow:var(--glow);animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.plan .body{flex:1;min-width:0}
+.plan .body .ttl{font-size:14px;font-weight:600}
+.plan .body .meta{font-size:12px;color:var(--text-2);margin-top:2px}
+.plan.done .ttl{text-decoration:line-through;color:var(--text-2)}
+.plan .score{font-size:11px;color:var(--primary);font-weight:700;background:var(--primary-soft);padding:4px 8px;border-radius:999px}
+.plan .actions{display:flex;gap:2px}
+.plan .actions button{width:28px;height:28px;border-radius:8px;background:transparent;border:none;color:var(--text-3);cursor:pointer;display:grid;place-items:center;transition:all .2s}
+.plan .actions button:active{transform:scale(.85)}
+.plan .actions .edit:active{color:var(--primary)}
+.plan .actions .del:active{color:var(--danger)}
+.nav{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:492px;display:flex;align-items:center;justify-content:space-around;padding:8px;background:var(--surface-2);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow-lg);z-index:100}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:14px;cursor:pointer;transition:all .3s cubic-bezier(.22,1,.36,1);color:var(--text-2)}
+.nav-item svg{width:22px;height:22px;transition:transform .3s}
+.nav-item span{font-size:10.5px;font-weight:600}
+.nav-item.active{color:var(--primary);background:var(--primary-soft)}
+.nav-item.active svg{transform:translateY(-2px) scale(1.08)}
+.nav-item:active{transform:scale(.92)}
+.nav-ai{flex:0 0 auto;width:62px;height:62px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;cursor:pointer;margin-top:-28px;box-shadow:0 10px 26px var(--primary-soft),0 0 0 6px var(--bg-2);position:relative;transition:transform .35s cubic-bezier(.34,1.56,.64,1);animation:aiPulse 2.4s ease-in-out infinite}
+.nav-ai svg{width:28px;height:28px}
+.nav-ai::before{content:'';position:absolute;inset:-8px;border-radius:50%;background:var(--grad);opacity:.4;z-index:-1;animation:aiRing 2.4s ease-out infinite}
+.nav-ai:active{transform:scale(.92)}
+.nav-ai.active{transform:scale(1.06)}
+@keyframes aiPulse{0%,100%{box-shadow:0 10px 26px var(--primary-soft),0 0 0 6px var(--bg-2)}50%{box-shadow:0 14px 36px var(--primary-soft),0 0 0 6px var(--bg-2),0 0 0 12px var(--primary-soft)}}
+@keyframes aiRing{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.4);opacity:0}}
+.add-btn{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:52px;padding:0 20px;margin:0 0 14px;border-radius:16px;background:var(--grad);color:#fff;font-weight:700;font-size:15px;letter-spacing:.2px;box-shadow:0 10px 24px rgba(0,0,0,.18),var(--glow);border:none;cursor:pointer;transition:transform .15s ease,box-shadow .2s ease;white-space:nowrap;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.add-btn:active{transform:scale(.985);box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.add-btn svg{flex-shrink:0}
+.add-btn.hidden{display:none}
+.seg{display:flex;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;position:relative}
+.seg-item{flex:1;text-align:center;padding:9px 4px;font-size:12.5px;font-weight:600;color:var(--text-2);border-radius:11px;cursor:pointer;transition:color .3s;position:relative;z-index:1}
+.seg-item.active{color:#fff}
+.seg-indicator{position:absolute;top:4px;bottom:4px;background:var(--grad);border-radius:11px;box-shadow:var(--glow);transition:all .35s cubic-bezier(.22,1,.36,1)}
+.year-chips{display:flex;flex-direction:row-reverse;gap:8px;overflow-x:auto;padding:4px 2px 8px;margin-bottom:6px;scroll-snap-type:x mandatory}
+.year-chips::-webkit-scrollbar{display:none}
+.year-chip{flex:0 0 auto;scroll-snap-align:end;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:10px 16px;cursor:pointer;text-align:center;transition:all .25s;min-width:78px}
+.year-chip:active{transform:scale(.94)}
+.year-chip.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.year-chip .y{font-size:17px;font-weight:800;line-height:1}
+.year-chip .c{font-size:10px;color:var(--text-2);margin-top:3px;font-weight:600}
+.year-chip.active .c{color:rgba(255,255,255,.85)}
+.months-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.month-cell{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .25s;position:relative}
+.month-cell:active{transform:scale(.95)}
+.month-cell.current{border-color:var(--primary);background:var(--primary-soft)}
+.month-cell .mn{font-size:13px;font-weight:700}
+.month-cell .ct{font-size:11px;color:var(--text-2);margin-top:4px}
+.month-cell .dot{width:6px;height:6px;background:var(--primary);border-radius:50%;margin:6px auto 0}
+.week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.wd{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 4px;text-align:center;cursor:pointer;transition:all .25s}
+.wd.today{background:var(--grad);color:#fff;border:none;box-shadow:var(--glow)}
+.wd .n{font-size:10.5px;opacity:.8}
+.wd .d{font-size:17px;font-weight:700;margin-top:2px}
+.diary{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,auto);grid-auto-flow:column;gap:10px}
+.diary-page{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;min-height:110px;position:relative;cursor:pointer;transition:all .3s;display:flex;flex-direction:column}
+.diary-page:active{transform:scale(.97)}
+.diary-page.today{border-color:var(--primary);box-shadow:var(--glow)}
+.diary-page::before{content:'';position:absolute;left:8px;top:8px;bottom:8px;width:2px;background:var(--primary-soft);border-radius:2px}
+.diary-page.left::before{left:auto;right:8px}
+.diary-page .dh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;padding:0 6px}
+.diary-page .dh .dn{font-size:12px;color:var(--text-2);font-weight:600}
+.diary-page .dh .dd{font-size:16px;font-weight:800;color:var(--primary)}
+.diary-page.today .dh .dd{color:#fff}
+.diary-page.today .dh .dn{color:rgba(255,255,255,.85)}
+.diary-page.today .dgoals{color:rgba(255,255,255,.9)}
+.diary-page.today{background:var(--grad);color:#fff}
+.dgoals{font-size:11.5px;color:var(--text-2);padding:0 6px;line-height:1.5;flex:1}
+.dgoals .g{display:flex;align-items:flex-start;gap:6px;margin-bottom:3px}
+.dgoals .g::before{content:'•';color:var(--primary);font-weight:700;flex-shrink:0}
+.diary-page.today .dgoals .g::before{color:#fff}
+.diary-page .empty{font-size:11px;color:var(--text-3);font-style:italic;padding:0 6px}
+.diary-page.today .empty{color:rgba(255,255,255,.75)}
+.diary-sunday{background:var(--grad-soft);border:1px solid var(--border);border-radius:16px;padding:14px;cursor:pointer;transition:all .3s}
+.diary-sunday:active{transform:scale(.98)}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px}
+.cal-head h3{font-size:16px;font-weight:700}
+.cal-head .nav-btn{width:32px;height:32px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;color:var(--text);transition:all .25s;font-size:18px;font-weight:700}
+.cal-head .nav-btn:active{transform:scale(.9)}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-dow span{text-align:center;font-size:10.5px;color:var(--text-2);font-weight:600;padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{min-height:66px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:3px;display:flex;flex-direction:column;font-size:11px;cursor:pointer;position:relative;transition:all .2s;overflow:hidden;gap:2px}
+.cal-day:active{transform:scale(.92)}
+.cal-day.empty{background:transparent;border:none;pointer-events:none}
+.cal-day.today{background:var(--grad);color:#fff;border:none;box-shadow:var(--glow)}
+.cal-day.selected:not(.today){border-color:var(--primary);background:var(--primary-soft);box-shadow:0 0 0 2px rgba(20,184,166,.25)}
+.cal-day .dn{font-size:10.5px;font-weight:700;text-align:right;padding:1px 3px;line-height:1}
+.cal-day .events{display:flex;flex-direction:column;gap:2px;padding:0 1px;min-height:0}
+.cal-day .ev{font-size:8.5px;line-height:1.1;padding:2px 3px;border-radius:3px;background:var(--primary-soft);color:var(--primary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-day .ev.c2{background:rgba(168,85,247,.18);color:#a855f7}
+.cal-day .ev.c3{background:rgba(245,158,11,.18);color:#d97706}
+.cal-day.today .ev{background:rgba(255,255,255,.28);color:#fff}
+.cal-day .more{font-size:8.5px;font-weight:700;color:var(--primary);padding:0 3px;line-height:1.1}
+.cal-day.today .more{color:#fff}
+.cal-day.has-events{border-color:var(--primary)}
+.dv-toggle{display:flex;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:14px;position:relative}
+.dv-toggle-item{flex:1;text-align:center;padding:10px 4px;font-size:13px;font-weight:600;color:var(--text-2);border-radius:11px;cursor:pointer;transition:color .3s;position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.dv-toggle-item.active{color:#fff}
+.dv-toggle-indicator{position:absolute;top:4px;bottom:4px;background:var(--grad);border-radius:11px;box-shadow:var(--glow);transition:all .35s cubic-bezier(.22,1,.36,1)}
+.week-banner{background:var(--grad);color:#fff;border-radius:18px;padding:14px 12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:var(--glow);position:relative;overflow:hidden}
+.week-banner::after{content:'';position:absolute;right:-30%;top:-30%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.15);pointer-events:none}
+.week-banner .lbl{font-size:11px;opacity:.9;text-transform:uppercase;letter-spacing:1px}
+.week-banner .rng{font-size:15px;font-weight:700;margin-top:2px;position:relative}
+.week-banner .nav-btn{position:relative;width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.22);border:none;color:#fff;font-size:18px;font-weight:700;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+.week-banner .nav-btn:active{transform:scale(.9)}
+.goal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px;display:flex;align-items:center;gap:12px;margin-bottom:8px;animation:slideIn .4s ease both;transition:transform .2s}
+.goal:active{transform:scale(.98)}
+.goal .cbx{width:22px;height:22px;border-radius:7px;border:2px solid var(--text-3);flex-shrink:0;display:grid;place-items:center;cursor:pointer;transition:all .25s;font-size:12px;font-weight:700}
+.goal .cbx.done{background:var(--grad);border-color:transparent;color:#fff}
+.goal.done .ttl{text-decoration:line-through;color:var(--text-2)}
+.goal .body{flex:1;min-width:0}
+.goal .ttl{font-size:14px;font-weight:600}
+.goal .desc{font-size:11.5px;color:var(--text-2);margin-top:2px}
+.goal .del{width:28px;height:28px;border-radius:8px;background:transparent;border:none;color:var(--text-3);cursor:pointer;display:grid;place-items:center;transition:all .2s}
+.goal .del:active{transform:scale(.85);color:var(--danger)}
+.empty-state{padding:30px 20px;text-align:center;color:var(--text-2)}
+.empty-state .ico{width:64px;height:64px;border-radius:22px;margin:0 auto 12px;background:var(--grad-soft);display:grid;place-items:center;color:var(--primary);font-size:28px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.empty-state h4{font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px}
+.empty-state p{font-size:12.5px}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;position:relative;overflow:hidden}
+.stat-card .l{font-size:11px;color:var(--text-2);font-weight:600}
+.stat-card .v{font-size:24px;font-weight:800;margin-top:4px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat-card .ch{font-size:11px;color:var(--success);margin-top:2px;font-weight:600}
+.stat-card .ic-bg{position:absolute;right:-8px;top:-8px;width:60px;height:60px;border-radius:50%;background:var(--grad-soft);display:grid;place-items:center;color:var(--primary);font-size:20px}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;margin-bottom:14px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.chart-head h3{font-size:14px;font-weight:700}
+.chart-head .pill{font-size:11px;color:var(--primary);background:var(--primary-soft);padding:3px 9px;border-radius:999px;font-weight:600}
+.bars{display:flex;align-items:flex-end;justify-content:space-between;height:130px;gap:6px;padding:0 2px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+.bar{width:100%;max-width:28px;background:var(--grad);border-radius:6px 6px 2px 2px;min-height:4px;transition:height .9s cubic-bezier(.22,1,.36,1);box-shadow:0 2px 8px var(--primary-soft);position:relative}
+.bar-col .lb{font-size:10px;color:var(--text-2);font-weight:600}
+.area-wrap{position:relative}
+.area-wrap svg{width:100%;height:160px;overflow:visible}
+.area-path{fill:url(#areaGrad);animation:areaIn 1.2s ease both}
+.area-line{fill:none;stroke:var(--primary);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 8px var(--primary-soft));animation:dashIn 1.5s ease both;stroke-dasharray:1000;stroke-dashoffset:0}
+.area-dot{fill:#fff;stroke:var(--primary);stroke-width:2.5}
+@keyframes areaIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dashIn{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+.heat-grid{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.heat-cell{aspect-ratio:1;border-radius:4px;background:var(--border);transition:transform .2s}
+.heat-cell:hover{transform:scale(1.4);z-index:5}
+.heat-cell[data-l="1"]{background:rgba(20,184,166,.25)}
+.heat-cell[data-l="2"]{background:rgba(20,184,166,.45)}
+.heat-cell[data-l="3"]{background:rgba(20,184,166,.7)}
+.heat-cell[data-l="4"]{background:var(--primary)}
+.achs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ach{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 8px;text-align:center;transition:transform .3s}
+.ach:active{transform:scale(.95)}
+.ach.locked{opacity:.45;filter:grayscale(.6)}
+.ach .ic{width:44px;height:44px;border-radius:14px;background:var(--grad);color:#fff;display:grid;place-items:center;margin:0 auto 6px;box-shadow:var(--glow);font-size:20px}
+.ach .nm{font-size:11px;font-weight:700}
+.ach .ds{font-size:9.5px;color:var(--text-2);margin-top:2px}
+.prof-hero{background:var(--grad);border-radius:22px;padding:22px;color:#fff;text-align:center;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:var(--glow)}
+.prof-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 20%,rgba(255,255,255,.25),transparent 60%)}
+.prof-hero .av{width:80px;height:80px;border-radius:26px;background:rgba(255,255,255,.22);backdrop-filter:blur(10px);display:grid;place-items:center;font-size:30px;font-weight:800;margin:0 auto 10px;border:2px solid rgba(255,255,255,.4);position:relative}
+.prof-hero .nm{font-size:18px;font-weight:800;position:relative}
+.prof-hero .un{font-size:12.5px;opacity:.85;margin-top:2px;position:relative}
+.prof-hero .stx{display:flex;justify-content:space-around;margin-top:16px;position:relative}
+.prof-hero .stx .it{text-align:center}
+.prof-hero .stx .v{font-size:22px;font-weight:800}
+.prof-hero .stx .l{font-size:10px;opacity:.85;text-transform:uppercase;letter-spacing:1px}
+.setting{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;transition:transform .2s}
+.setting:active{transform:scale(.98)}
+.setting .ic{width:38px;height:38px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;flex-shrink:0;font-size:18px}
+.setting .body{flex:1}
+.setting .ttl{font-size:14px;font-weight:600}
+.setting .dsc{font-size:11.5px;color:var(--text-2);margin-top:2px}
+.toggle{width:48px;height:28px;background:var(--border);border-radius:999px;position:relative;cursor:pointer;transition:background .3s;flex-shrink:0}
+.toggle.on{background:var(--primary)}
+.toggle i{position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:all .3s cubic-bezier(.22,1,.36,1);box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.toggle.on i{left:23px}
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.theme-tile{background:var(--surface);border:2px solid var(--border);border-radius:16px;padding:12px 8px;cursor:pointer;transition:all .3s;text-align:center}
+.theme-tile:active{transform:scale(.95)}
+.theme-tile.active{border-color:var(--primary);box-shadow:var(--glow)}
+.theme-tile .sw{width:100%;height:36px;border-radius:10px;margin-bottom:6px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.theme-tile .nm{font-size:11px;font-weight:700}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);z-index:200;display:none;animation:fadeIn .25s ease}
+.modal-back.show{display:grid;place-items:end center}
+.modal{background:var(--bg-2);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:24px 20px 30px;animation:slideUp .35s cubic-bezier(.22,1,.36,1);max-height:90vh;overflow-y:auto}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:14px}
+.modal .grab{width:38px;height:4px;background:var(--border);border-radius:2px;margin:-10px auto 14px}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px}
+.fld input,.fld textarea,.fld select{width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:14px;color:var(--text);font-family:inherit;transition:border-color .25s,box-shadow .25s}
+.fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.fld textarea{resize:none;min-height:70px}
+.btn{flex:1;padding:14px;border:none;border-radius:14px;background:var(--grad);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:var(--glow);transition:transform .2s}
+.btn:active{transform:scale(.97)}
+.btn-ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:none}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--text);color:var(--bg);padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);z-index:300;opacity:0;transition:all .35s cubic-bezier(.22,1,.36,1)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ripple{position:relative;overflow:hidden}
+.ripple-ink{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);pointer-events:none;animation:rip .55s ease-out}
+@keyframes rip{to{transform:scale(2.5);opacity:0}}
+.ai-hero{position:relative;background:var(--grad);color:#fff;border-radius:26px;padding:30px 22px;text-align:center;box-shadow:var(--glow);overflow:hidden;margin-bottom:16px}
+.ai-hero::before{content:'';position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.25),transparent 60%);animation:spin 8s linear infinite}
+.ai-hero>*{position:relative}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-hero .orb{width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(10px);display:grid;place-items:center;margin:0 auto 14px;border:2px solid rgba(255,255,255,.4);font-size:42px;animation:bob 3s ease-in-out infinite}
+.ai-hero h2{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.ai-hero p{font-size:13px;opacity:.92;margin-top:6px;line-height:1.5}
+.ai-hero .badge{display:inline-block;margin-top:14px;background:rgba(255,255,255,.25);backdrop-filter:blur(8px);padding:6px 14px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.ai-features{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ai-feat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;text-align:center}
+.ai-feat .ic{font-size:24px;margin-bottom:6px}
+.ai-feat .nm{font-size:12.5px;font-weight:700}
+.ai-feat .ds{font-size:10.5px;color:var(--text-2);margin-top:3px;line-height:1.4}
+.row{display:flex;align-items:center;gap:10px}
+.gap-12{gap:12px}
+.mt-8{margin-top:8px}
+.mt-16{margin-top:16px}
+.hidden{display:none !important}
+::-webkit-scrollbar{width:0;height:0}
+
+.diary-page.selected:not(.today){border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft),var(--glow);transform:translateY(-2px)}
+.diary-sunday.selected{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft),var(--glow);transform:translateY(-2px)}
+.diary-page,.diary-sunday{will-change:transform,box-shadow}
+@keyframes selectPulse{0%{box-shadow:0 0 0 0 var(--primary-soft)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.diary-page.selected:not(.today),.diary-sunday.selected{animation:selectPulse .6s ease-out}
+.year-chip,.month-cell,.wd,.stat-card,.ach,.theme-tile,.ai-feat,.mini-stat,.setting{will-change:transform}
+.year-chip,.month-cell,.wd,.stat-card,.ach,.theme-tile,.ai-feat,.mini-stat{transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s ease,border-color .25s ease}
+.month-cell:hover,.year-chip:hover,.stat-card:hover,.ach:hover,.theme-tile:hover,.ai-feat:hover,.mini-stat:hover,.setting:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.hero-left .val{background:linear-gradient(90deg,#fff 0%,rgba(255,255,255,.7) 50%,#fff 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmer 4s ease-in-out infinite}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.mini-stat,.stat-card,.chart-card,.ach,.ai-feat{animation:cardIn .5s cubic-bezier(.22,1,.36,1) both}
+.mini-stat:nth-child(1){animation-delay:.05s}.mini-stat:nth-child(2){animation-delay:.12s}.mini-stat:nth-child(3){animation-delay:.19s}
+.stat-card:nth-child(1){animation-delay:.05s}.stat-card:nth-child(2){animation-delay:.12s}.stat-card:nth-child(3){animation-delay:.19s}.stat-card:nth-child(4){animation-delay:.26s}
+.ai-feat:nth-child(1){animation-delay:.08s}.ai-feat:nth-child(2){animation-delay:.16s}.ai-feat:nth-child(3){animation-delay:.24s}.ai-feat:nth-child(4){animation-delay:.32s}
+@keyframes chipIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.year-chip{animation:chipIn .4s ease both}
+.year-chip:nth-child(1){animation-delay:.05s}.year-chip:nth-child(2){animation-delay:.1s}.year-chip:nth-child(3){animation-delay:.15s}.year-chip:nth-child(4){animation-delay:.2s}.year-chip:nth-child(5){animation-delay:.25s}.year-chip:nth-child(6){animation-delay:.3s}.year-chip:nth-child(7){animation-delay:.35s}
+@keyframes cellIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+.month-cell,.wd,.cal-day:not(.empty){animation:cellIn .35s cubic-bezier(.34,1.56,.64,1) both}
+.month-cell:nth-child(n){animation-delay:calc(var(--i,0) * 30ms)}
+@keyframes glowPulse{0%,100%{box-shadow:var(--glow)}50%{box-shadow:0 14px 36px var(--primary-soft),0 0 0 8px var(--primary-soft)}}
+.add-btn{animation:glowPulse 3s ease-in-out infinite}
+.add-btn:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.22),var(--glow)}
+@keyframes heroIn{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.hero,.ai-hero,.prof-hero,.week-banner{animation:heroIn .55s cubic-bezier(.22,1,.36,1) both}
+@keyframes barPop{0%{transform:scaleY(0);transform-origin:bottom}60%{transform:scaleY(1.05);transform-origin:bottom}100%{transform:scaleY(1);transform-origin:bottom}}
+.bar{animation:barPop .8s cubic-bezier(.34,1.56,.64,1) both}
+.nav-item:hover{background:var(--primary-soft);color:var(--primary)}
+.toggle{transition:background .35s ease}
+.toggle i{transition:left .35s cubic-bezier(.68,-.55,.27,1.55),background .3s}
+.cbx{transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+
+/* ── Discipline ring + level bar (home hero v2) ─────────────────────────── */
+.hero-v2{background:var(--grad);color:#fff;border-radius:24px;padding:18px 18px 16px;box-shadow:var(--glow);position:relative;overflow:hidden;margin-bottom:16px}
+.hero-v2::before{content:'';position:absolute;top:-30%;right:-15%;width:240px;height:240px;border-radius:50%;background:rgba(255,255,255,.18);filter:blur(28px);animation:float 14s ease-in-out infinite}
+.hero-v2 .top{display:flex;align-items:center;gap:14px;position:relative;z-index:1}
+.ds-ring{position:relative;width:96px;height:96px;flex-shrink:0}
+.ds-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ds-ring .bgc{stroke:rgba(255,255,255,.22);fill:none;stroke-width:9}
+.ds-ring .fgc{stroke:#fff;fill:none;stroke-width:9;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(255,255,255,.6));transition:stroke-dashoffset 1.4s cubic-bezier(.22,1,.36,1)}
+.ds-ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ds-ring .v{font-size:24px;font-weight:800;line-height:1}
+.ds-ring .l{font-size:9px;opacity:.85;letter-spacing:1px;margin-top:2px;text-transform:uppercase}
+.hero-v2 .info{flex:1;min-width:0}
+.hero-v2 .rank{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.22);backdrop-filter:blur(8px);padding:5px 11px;border-radius:999px;font-weight:700;font-size:11.5px;letter-spacing:.4px}
+.hero-v2 .lvl{font-size:13px;opacity:.92;margin-top:8px}
+.hero-v2 .lvl b{font-weight:800;font-size:15px}
+.hero-v2 .xpbar{margin-top:8px;height:8px;background:rgba(255,255,255,.22);border-radius:999px;overflow:hidden;position:relative}
+.hero-v2 .xpbar>i{display:block;height:100%;background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));border-radius:999px;transition:width 1s cubic-bezier(.22,1,.36,1);box-shadow:0 0 10px rgba(255,255,255,.6)}
+.hero-v2 .xpmeta{display:flex;justify-content:space-between;font-size:10.5px;opacity:.85;margin-top:4px}
+.hero-v2 .bottom{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);position:relative;z-index:1}
+.hero-v2 .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600}
+.hero-v2 .chip .em{font-size:14px}
+.hero-v2 .chip.warn{color:#fff;background:rgba(0,0,0,.18);padding:4px 9px;border-radius:999px;animation:pulseWarn 2s ease-in-out infinite}
+@keyframes pulseWarn{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.5)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
+
+/* ── Daily Quest card ───────────────────────────────────────────────────── */
+.quest{background:var(--surface-2);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;animation:cardIn .5s cubic-bezier(.22,1,.36,1) both;position:relative;overflow:hidden}
+.quest::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--grad);border-radius:0 4px 4px 0}
+.quest .qic{width:48px;height:48px;border-radius:14px;background:var(--grad-soft);color:var(--primary);display:grid;place-items:center;font-size:22px;flex-shrink:0}
+.quest .qbody{flex:1;min-width:0}
+.quest .qttl{font-size:14px;font-weight:700}
+.quest .qsub{font-size:11.5px;color:var(--text-2);margin-top:2px}
+.quest .qprog{margin-top:6px;height:5px;background:var(--border);border-radius:999px;overflow:hidden}
+.quest .qprog>i{display:block;height:100%;background:var(--grad);border-radius:999px;transition:width 1s cubic-bezier(.22,1,.36,1)}
+.quest .qmeta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--text-3);margin-top:4px;font-weight:600}
+.quest.done .qic{background:var(--grad);color:#fff}
+
+/* ── AI Coach page ──────────────────────────────────────────────────────── */
+.coach-card{background:var(--grad);color:#fff;border-radius:22px;padding:20px;box-shadow:var(--glow);position:relative;overflow:hidden;margin-bottom:14px;animation:heroIn .5s cubic-bezier(.22,1,.36,1) both}
+.coach-card::before{content:'';position:absolute;inset:-50%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.15),transparent 60%);animation:spin 12s linear infinite;pointer-events:none}
+.coach-card>*{position:relative}
+.coach-card .ico{font-size:36px;margin-bottom:6px}
+.coach-card .msg{font-size:15px;line-height:1.55;font-weight:600}
+.coach-card .tag{display:inline-block;margin-top:10px;font-size:10.5px;letter-spacing:1.2px;text-transform:uppercase;background:rgba(255,255,255,.22);padding:5px 10px;border-radius:999px;backdrop-filter:blur(6px);font-weight:700}
+.mood-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+.mood-pill{aspect-ratio:1;display:grid;place-items:center;font-size:24px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;transition:all .25s}
+.mood-pill:active{transform:scale(.92)}
+.mood-pill.active{background:var(--grad);border-color:transparent;box-shadow:var(--glow);transform:scale(1.05)}
+.energy-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+.energy-cell{aspect-ratio:1.6;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text-2);transition:all .25s}
+.energy-cell.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.intent-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:14px}
+.intent-card label{display:block;font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
+.intent-card textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:14px;font-family:inherit;resize:none;min-height:60px;outline:none}
+.intent-card .save{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.intent-card .save .info{font-size:11px;color:var(--text-3)}
+.intent-card .save button{background:var(--grad);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-weight:700;font-size:12.5px;cursor:pointer;box-shadow:var(--glow)}
+.intent-card .save button:active{transform:scale(.96)}
+.insight{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.insight .ic{width:36px;height:36px;border-radius:11px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.insight .body .t{font-size:13px;font-weight:700}
+.insight .body .d{font-size:11.5px;color:var(--text-2);margin-top:2px;line-height:1.4}
+
+/* ── Premium card ───────────────────────────────────────────────────────── */
+.premium{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;border-radius:20px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:0 12px 32px rgba(15,52,96,.4)}
+.premium::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 20%,rgba(245,215,110,.25),transparent 50%);pointer-events:none}
+.premium .top{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative}
+.premium .crown{font-size:22px;filter:drop-shadow(0 2px 6px rgba(245,215,110,.6))}
+.premium .ttl{font-size:16px;font-weight:800;letter-spacing:.3px}
+.premium .sub{font-size:12.5px;opacity:.82;line-height:1.45;margin-bottom:12px;position:relative}
+.premium .feats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:14px;position:relative}
+.premium .feats div{font-size:11.5px;display:flex;align-items:center;gap:6px}
+.premium .feats div::before{content:'✓';color:#f5d76e;font-weight:800}
+.premium .cta{display:block;width:100%;background:linear-gradient(135deg,#f5d76e,#d4a017);color:#1a1a2e;text-align:center;padding:12px;border-radius:14px;font-weight:800;font-size:14px;border:none;cursor:pointer;box-shadow:0 8px 20px rgba(245,215,110,.35);position:relative;letter-spacing:.3px}
+.premium .cta:active{transform:scale(.98)}
+
+/* ── Share / streak card ────────────────────────────────────────────────── */
+.share-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer;transition:transform .2s}
+.share-card:active{transform:scale(.98)}
+.share-card .ic{font-size:22px}
+.share-card .body{flex:1}
+.share-card .t{font-size:13px;font-weight:700}
+.share-card .d{font-size:11.5px;color:var(--text-2);margin-top:1px}
+
+/* ── Achievement unlock modal ───────────────────────────────────────────── */
+.unlock-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);z-index:400;display:none;place-items:center;animation:fadeIn .35s ease}
+.unlock-overlay.show{display:grid}
+.unlock-card{background:var(--bg-2);border-radius:24px;padding:28px 24px;text-align:center;max-width:300px;animation:unlockIn .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes unlockIn{0%{opacity:0;transform:scale(.6) rotateZ(-8deg)}60%{opacity:1;transform:scale(1.08) rotateZ(2deg)}100%{transform:scale(1) rotateZ(0)}}
+.unlock-card .badge{width:120px;height:120px;border-radius:32px;background:var(--grad);display:grid;place-items:center;margin:0 auto 14px;font-size:60px;box-shadow:0 18px 40px var(--primary-soft);animation:badgeShine 1.6s ease-in-out infinite}
+@keyframes badgeShine{0%,100%{filter:drop-shadow(0 0 0 var(--primary))}50%{filter:drop-shadow(0 0 22px var(--primary))}}
+.unlock-card .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:2px;color:var(--text-2);font-weight:700;margin-bottom:6px}
+.unlock-card .ttl{font-size:22px;font-weight:800;margin-bottom:6px}
+.unlock-card .rar{display:inline-block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:var(--grad);color:#fff;padding:4px 10px;border-radius:999px;font-weight:800;margin-bottom:16px}
+.unlock-card .ok{background:var(--grad);color:#fff;border:none;padding:11px 28px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:var(--glow)}
+.unlock-card .ok:active{transform:scale(.96)}
+.confetti-piece{position:fixed;width:8px;height:14px;border-radius:2px;pointer-events:none;z-index:401;will-change:transform,opacity;animation:confetti 2s linear forwards}
+@keyframes confetti{to{transform:translate3d(var(--cx,0),100vh,0) rotate(720deg);opacity:0}}
+
+/* ── XP popup ───────────────────────────────────────────────────────────── */
+.xp-pop{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);background:var(--grad);color:#fff;padding:16px 28px;border-radius:24px;font-weight:800;font-size:22px;box-shadow:var(--glow);z-index:399;pointer-events:none;animation:xpPop 1.5s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes xpPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}45%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
+
+/* ── Onboarding overlay ─────────────────────────────────────────────────── */
+.ob{position:fixed;inset:0;background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(20,184,166,.92));backdrop-filter:blur(20px);z-index:500;display:none;flex-direction:column;padding:28px 22px 30px;animation:fadeIn .4s ease;color:#fff}
+.ob.show{display:flex}
+.ob .step{flex:1;display:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;animation:obIn .5s cubic-bezier(.22,1,.36,1)}
+.ob .step.active{display:flex}
+@keyframes obIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.ob .em{font-size:84px;margin-bottom:18px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25));animation:bob 3s ease-in-out infinite}
+.ob h1{font-size:26px;font-weight:800;margin-bottom:10px;line-height:1.25}
+.ob p{font-size:14.5px;line-height:1.55;opacity:.92;max-width:300px;margin-bottom:22px}
+.ob .opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
+.ob .opt{padding:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,.18);border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;color:#fff}
+.ob .opt:active{transform:scale(.98)}
+.ob .opt.sel{background:#fff;color:var(--primary);border-color:#fff}
+.ob .opt .em{font-size:22px;margin:0;animation:none;filter:none}
+.ob .dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
+.ob .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}
+.ob .dot.active{width:22px;border-radius:4px;background:#fff}
+.ob .nav{display:flex;gap:10px;width:100%;max-width:320px;margin-top:8px}
+.ob .nav button{flex:1;padding:13px;border-radius:14px;border:none;font-weight:700;font-size:14px;cursor:pointer}
+.ob .nav .skip{background:rgba(255,255,255,.18);color:#fff}
+.ob .nav .next{background:#fff;color:var(--primary)}
+.ob .nav .next:active{transform:scale(.98)}
+
+/* ── Locked premium chip ────────────────────────────────────────────────── */
+.locked-card{position:relative;overflow:hidden}
+.locked-card::after{content:'🔒 Premium';position:absolute;top:8px;right:8px;font-size:9.5px;font-weight:800;letter-spacing:.8px;background:linear-gradient(135deg,#f5d76e,#d4a017);color:#1a1a2e;padding:3px 8px;border-radius:999px}
+
+/* ── Plan completion checkmark animation ────────────────────────────────── */
+@keyframes checkPop{0%{transform:scale(0) rotate(-180deg)}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
+.plan .cbx.done{animation:checkPop .55s cubic-bezier(.34,1.56,.64,1)}
+
+</style>
+</head>
+<body>
+<div class="app">
+<section class="page active" data-page="home">
+<div class="hdr">
+  <div class="hdr-greet"><h1>Assalom, <span id="userName">Foydalanuvchi</span> <span class="wave">👋</span></h1><p id="todayDate">Bugun</p></div>
+  <div class="hdr-actions"><button class="mode-btn" id="modeBtn" aria-label="Rejim"><span class="ic" id="modeIcon">☀️</span></button></div>
+</div>
+
+<div class="hero-v2" id="heroV2">
+  <div class="top">
+    <div class="ds-ring">
+      <svg viewBox="0 0 100 100">
+        <circle class="bgc" cx="50" cy="50" r="42"/>
+        <circle class="fgc" id="dsRing" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264"/>
+      </svg>
+      <div class="ctr"><div class="v" id="dsValue">0</div><div class="l">Discipline</div></div>
+    </div>
+    <div class="info">
+      <div class="rank" id="rankChip"><span id="rankEmoji">🌱</span> <span id="rankTitle">Boshlovchi</span></div>
+      <div class="lvl">Daraja <b id="levelNum">1</b> · <span id="xpInLvl">0</span>/<span id="xpNeeded">100</span> XP</div>
+      <div class="xpbar"><i id="xpBar" style="width:0%"></i></div>
+      <div class="xpmeta"><span id="xpPctLabel">0%</span><span id="totalXpLabel">0 XP</span></div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="chip"><span class="em">🔥</span> <span id="streakCount">0</span> kun streak</div>
+    <div class="chip" id="streakRiskChip"><span class="em">📋</span> <span id="todayStat">0/0</span> bugun</div>
+  </div>
+</div>
+
+<div class="quest" id="questCard" style="display:none">
+  <div class="qic" id="qIcon">🎯</div>
+  <div class="qbody">
+    <div class="qttl" id="qTitle">Bugungi vazifa</div>
+    <div class="qsub" id="qSub">Yuklanmoqda…</div>
+    <div class="qprog"><i id="qProg" style="width:0%"></i></div>
+    <div class="qmeta"><span id="qMetaProg">0/0</span><span id="qReward">+0 XP</span></div>
+  </div>
+</div>
+
+<div class="mini-stats"><div class="mini-stat"><div class="ic">📋</div><div class="v" id="msPlans">0</div><div class="l">Rejalar</div></div><div class="mini-stat"><div class="ic">🎯</div><div class="v" id="msGoals">0</div><div class="l">Maqsadlar</div></div><div class="mini-stat"><div class="ic">⭐</div><div class="v" id="msScore">0</div><div class="l">Jami ball</div></div></div>
+<div class="section-title"><h2>Bugungi rejalar</h2></div>
+<button class="add-btn ripple" id="addPlanBtn" type="button" aria-label="Reja qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Reja qo'shish</span></button>
+<div id="plansList"></div>
+</section>
+
+<section class="page" data-page="goals">
+<div class="hdr"><div class="hdr-greet"><h1>Maqsadlar 🎯</h1><p>Yo'lingni rejalashtir</p></div></div>
+<div class="seg" id="goalSeg"><div class="seg-indicator" id="goalSegInd"></div><div class="seg-item active" data-gp="yearly">Yillik</div><div class="seg-item" data-gp="monthly">Oylik</div><div class="seg-item" data-gp="weekly">Haftalik</div><div class="seg-item" data-gp="daily">Kunlik</div></div>
+
+<div class="goal-view" id="gvYearly">
+  <div class="year-chips" id="yearChips"></div>
+  <button class="add-btn ripple add-goal-trigger" data-gp="yearly" type="button" aria-label="Maqsad qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Maqsad qo'shish</span></button>
+  <div id="yearlyList" class="mt-16"></div>
+</div>
+
+<div class="goal-view hidden" id="gvMonthly">
+  <div class="months-grid" id="monthsGrid"></div>
+  <button class="add-btn ripple add-goal-trigger" data-gp="monthly" type="button" style="margin-top:12px" aria-label="Maqsad qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Maqsad qo'shish</span></button>
+  <div id="monthlyList" class="mt-16"></div>
+</div>
+
+<div class="goal-view hidden" id="gvWeekly">
+  <div class="week-banner">
+    <button class="nav-btn" id="weekPrev">‹</button>
+    <div style="text-align:center;flex:1;position:relative"><div class="lbl">Hafta</div><div class="rng" id="weekRange">—</div></div>
+    <button class="nav-btn" id="weekNext">›</button>
+  </div>
+  <div class="week-strip" id="weekStrip"></div>
+  <button class="add-btn ripple add-goal-trigger" data-gp="weekly" type="button" aria-label="Maqsad qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Maqsad qo'shish</span></button>
+  <div class="section-title"><h2>Shu hafta uchun maqsadlar</h2></div>
+  <div id="weeklyList"></div>
+</div>
+
+<div class="goal-view hidden" id="gvDaily">
+  <div class="dv-toggle" id="dvToggle"><div class="dv-toggle-indicator" id="dvInd"></div><div class="dv-toggle-item active" data-dv="week">📖 Hafta version</div><div class="dv-toggle-item" data-dv="month">🗓️ Oylik version</div></div>
+  <div id="dvWeek"><div class="cal-head"><button class="nav-btn" id="diaryPrev">‹</button><h3 id="diaryRange">—</h3><button class="nav-btn" id="diaryNext">›</button></div><div class="diary" id="diaryGrid"></div><div class="diary-sunday" id="diarySunday" style="margin-top:10px"></div><div style="margin-top:14px"><button class="add-btn ripple add-goal-trigger" data-gp="daily" type="button" aria-label="Maqsad qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Maqsad qo'shish</span></button></div></div>
+  <div id="dvMonth" class="hidden"><div class="cal-head"><button class="nav-btn" id="calPrev">‹</button><h3 id="calTitle">—</h3><button class="nav-btn" id="calNext">›</button></div><div class="cal-dow"><span>Du</span><span>Se</span><span>Cho</span><span>Pa</span><span>Ju</span><span>Sha</span><span>Ya</span></div><div class="cal-grid" id="calGrid"></div><div style="margin-top:14px"><button class="add-btn ripple add-goal-trigger" data-gp="daily" type="button" aria-label="Maqsad qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Maqsad qo'shish</span></button></div></div>
+  <div class="section-title"><h2 id="dailyTitleText">Tanlangan kun maqsadlari</h2></div>
+  <div id="dailyList"></div>
+</div>
+</section>
+
+<section class="page" data-page="ai">
+<div class="hdr"><div class="hdr-greet"><h1>AI Coach ✨</h1><p>Sening shaxsiy mentoring</p></div></div>
+
+<div class="coach-card" id="coachCard">
+  <div class="ico" id="coachIco">🌅</div>
+  <div class="msg" id="coachMsg">Yuklanmoqda…</div>
+  <div class="tag" id="coachTag">COACH</div>
+</div>
+
+<div class="section-title"><h2>Bugungi kayfiyat</h2></div>
+<div class="mood-row" id="moodRow">
+  <div class="mood-pill" data-mood="🔥" title="Olovli">🔥</div>
+  <div class="mood-pill" data-mood="💪" title="Kuchli">💪</div>
+  <div class="mood-pill" data-mood="😐" title="Oddiy">😐</div>
+  <div class="mood-pill" data-mood="😴" title="Charchagan">😴</div>
+  <div class="mood-pill" data-mood="😞" title="Past">😞</div>
+</div>
+
+<div class="section-title"><h2>Energiya darajasi</h2></div>
+<div class="energy-row" id="energyRow">
+  <div class="energy-cell" data-en="1">1</div>
+  <div class="energy-cell" data-en="2">2</div>
+  <div class="energy-cell" data-en="3">3</div>
+  <div class="energy-cell" data-en="4">4</div>
+  <div class="energy-cell" data-en="5">5</div>
+</div>
+
+<div class="intent-card">
+  <label>🌅 Bugungi niyatim</label>
+  <textarea id="intentTxt" placeholder="Bugun nimaga e'tibor qarataman?"></textarea>
+  <div class="save"><span class="info" id="intentSavedInfo"></span><button id="intentSave">Saqlash</button></div>
+</div>
+
+<div class="intent-card">
+  <label>🌙 Kun yakuni</label>
+  <textarea id="reflectTxt" placeholder="Bugun nima yaxshi ketdi? Nimani o'zgartirishim mumkin?"></textarea>
+  <div class="save"><span class="info" id="reflectSavedInfo"></span><button id="reflectSave">Saqlash</button></div>
+</div>
+
+<div class="section-title"><h2>Smart insights 🧠</h2></div>
+<div id="insights"></div>
+
+<div class="premium locked-card" id="premiumCard">
+  <div class="top"><span class="crown">👑</span><span class="ttl">Intizom AI Pro</span></div>
+  <div class="sub">Cheksiz maqsadlar, AI coach, streak protection va boshqa premium imkoniyatlar.</div>
+  <div class="feats">
+    <div>Cheksiz reja</div>
+    <div>AI Coach +</div>
+    <div>Streak Freeze</div>
+    <div>Chuqur tahlil</div>
+    <div>Elite badges</div>
+    <div>Premium temalar</div>
+  </div>
+  <button class="cta" id="premiumCta">✨ Premium ochish</button>
+</div>
+
+</section>
+
+<section class="page" data-page="stats">
+<div class="hdr"><div class="hdr-greet"><h1>Statistika 📊</h1><p>Sening progressing</p></div></div>
+<div class="stat-grid">
+<div class="stat-card"><div class="ic-bg">🔥</div><div class="l">Joriy streak</div><div class="v" id="stStreak">0</div><div class="ch">+<span id="stStreakDelta">0</span> bu hafta</div></div>
+<div class="stat-card"><div class="ic-bg">⭐</div><div class="l">Jami ball</div><div class="v" id="stTotal">0</div><div class="ch">+<span id="stTotalDelta">0</span> bu hafta</div></div>
+<div class="stat-card"><div class="ic-bg">✓</div><div class="l">Bajarilgan</div><div class="v" id="stDone">0</div><div class="ch">Bu oy</div></div>
+<div class="stat-card"><div class="ic-bg">🎯</div><div class="l">Maqsadlar</div><div class="v" id="stGoals">0</div><div class="ch">Faol</div></div>
+</div>
+<div class="section-title"><h2>30 kunlik tahlil</h2></div>
+<div class="stat-grid" id="extraStats"></div>
+<div class="chart-card"><div class="chart-head"><h3>Haftalik faollik</h3><span class="pill">Oxirgi 7 kun</span></div><div class="bars" id="weekBars"></div></div>
+<div class="chart-card"><div class="chart-head"><h3>Discipline Score Trend</h3><span class="pill" id="dstPill">30 kun</span></div><div class="area-wrap"><svg id="trendSvg" viewBox="0 0 320 160" preserveAspectRatio="none"><defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--primary)" stop-opacity=".5"/><stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs><g id="trendG"></g></svg></div></div>
+<div class="chart-card"><div class="chart-head"><h3>Faollik xaritasi</h3><span class="pill">14 hafta</span></div><div class="heat-grid" id="heatGrid"></div></div>
+<div class="chart-card"><div class="chart-head"><h3>Maqsadlar bajarilishi</h3><span class="pill" id="goalDonutPill">0%</span></div>
+<div style="display:flex;align-items:center;gap:20px"><svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0"><circle cx="55" cy="55" r="46" fill="none" stroke="var(--border)" stroke-width="10"/><circle id="donut" cx="55" cy="55" r="46" fill="none" stroke="url(#donutGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 55 55)" style="transition:stroke-dashoffset 1.5s cubic-bezier(.22,1,.36,1)"/><defs><linearGradient id="donutGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="var(--primary)"/><stop offset="100%" stop-color="var(--primary-2)"/></linearGradient></defs></svg>
+<div style="flex:1"><div style="font-size:13px;color:var(--text-2);margin-bottom:8px">Tip bo'yicha taqsimot</div><div id="goalBreakdown" style="display:flex;flex-direction:column;gap:6px"></div></div></div></div>
+<div class="section-title"><h2>Yutuqlar 🏆</h2></div>
+<div class="achs" id="achs"></div>
+</section>
+
+<section class="page" data-page="profile">
+<div class="hdr"><div class="hdr-greet"><h1>Profil 👤</h1><p>Sozlamalar</p></div></div>
+<div class="prof-hero"><div class="av" id="profAv">A</div><div class="nm" id="profName">Foydalanuvchi</div><div class="un" id="profUn">@username</div><div class="stx"><div class="it"><div class="v" id="pfStreak">0</div><div class="l">Streak</div></div><div class="it"><div class="v" id="pfScore">0</div><div class="l">Ball</div></div><div class="it"><div class="v" id="pfDone">0</div><div class="l">Bajarilgan</div></div></div></div>
+<div class="section-title"><h2>🎨 Tema</h2></div>
+<div class="theme-grid" id="themeGrid"></div>
+<div class="section-title"><h2>Rejim</h2></div>
+<div class="setting"><div class="ic">🌓</div><div class="body"><div class="ttl">Tungi rejim</div><div class="dsc">Yorug' / qorong'i</div></div><div class="toggle" id="darkToggle"><i></i></div></div>
+<div class="section-title"><h2>Sozlamalar</h2></div>
+<div class="setting"><div class="ic">🔔</div><div class="body"><div class="ttl">Bildirishnomalar</div><div class="dsc">Eslatmalar va yutuqlar</div></div><div class="toggle on" id="notifToggle"><i></i></div></div>
+<div class="setting"><div class="ic">✨</div><div class="body"><div class="ttl">Animatsiyalar</div><div class="dsc">Yumshoq harakatlar</div></div><div class="toggle on" id="animToggle"><i></i></div></div>
+<div class="setting"><div class="ic">ℹ️</div><div class="body"><div class="ttl">Versiya</div><div class="dsc">Intizom AI v2.1 Pro</div></div></div>
+</section>
+</div>
+
+<!-- Achievement unlock modal -->
+<div class="unlock-overlay" id="unlockOverlay">
+  <div class="unlock-card">
+    <div class="badge" id="unlockIcon">🏆</div>
+    <div class="lbl">Yangi yutuq</div>
+    <div class="ttl" id="unlockTitle">—</div>
+    <div class="rar" id="unlockRarity">COMMON</div>
+    <button class="ok" id="unlockOk">A'lo!</button>
+  </div>
+</div>
+
+<!-- First-run onboarding -->
+<div class="ob" id="onboarding">
+  <div class="step active" data-step="0">
+    <div class="em">🎯</div>
+    <h1>Salom!<br>Men Intizom AI</h1>
+    <p>Sening shaxsiy intizom OS'ing. Maqsadlaringni rejaga aylantiraman, streakingni saqlayman.</p>
+    <div class="dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+    <div class="nav"><button class="skip" id="obSkip">O'tkazib yuborish</button><button class="next" data-go="1">Davom etish ›</button></div>
+  </div>
+  <div class="step" data-step="1">
+    <div class="em">🧭</div>
+    <h1>Sen kimsan?</h1>
+    <p>Bu seni shaxsan tushunishimga yordam beradi.</p>
+    <div class="opts" id="personaOpts">
+      <div class="opt" data-p="student"><span class="em">📚</span><div><div>Talaba</div><div style="font-size:11.5px;opacity:.7;font-weight:600">Imtihon, dars, tartib</div></div></div>
+      <div class="opt" data-p="pro"><span class="em">💼</span><div><div>Mutaxassis</div><div style="font-size:11.5px;opacity:.7;font-weight:600">Ish, loyiha, o'sish</div></div></div>
+      <div class="opt" data-p="self"><span class="em">🌱</span><div><div>O'zimni rivojlantirish</div><div style="font-size:11.5px;opacity:.7;font-weight:600">Sport, kitob, odat</div></div></div>
+      <div class="opt" data-p="mixed"><span class="em">⚡</span><div><div>Hammasi</div><div style="font-size:11.5px;opacity:.7;font-weight:600">Maksimal samaradorlik</div></div></div>
+    </div>
+    <div class="dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
+    <div class="nav"><button class="skip" data-go="0">‹ Orqaga</button><button class="next" data-go="2">Keyingi ›</button></div>
+  </div>
+  <div class="step" data-step="2">
+    <div class="em">🔥</div>
+    <h1>Va'da</h1>
+    <p>Har kuni kamida 1 ta reja bajarish — sen va sening kelajagingga aytilgan va'da.</p>
+    <div class="opts">
+      <div class="opt" id="commitOpt"><span class="em">✋</span><div><div>Men o'zimga va'da beraman</div><div style="font-size:11.5px;opacity:.7;font-weight:600">Streak boshlash uchun bos</div></div></div>
+    </div>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+    <div class="nav"><button class="skip" data-go="1">‹ Orqaga</button><button class="next" id="obFinish">Boshlash 🚀</button></div>
+  </div>
+</div>
+
+<nav class="nav">
+<div class="nav-item active" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Asosiy</span></div>
+<div class="nav-item" data-nav="goals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><span>Maqsad</span></div>
+<div class="nav-ai" data-nav="ai" aria-label="AI"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.5l1.9 4.8a2.5 2.5 0 0 0 1.4 1.4L20 10.6l-4.7 1.9a2.5 2.5 0 0 0-1.4 1.4L12 18.7l-1.9-4.8a2.5 2.5 0 0 0-1.4-1.4L4 10.6l4.7-1.9a2.5 2.5 0 0 0 1.4-1.4L12 2.5z" opacity=".95"/><circle cx="19" cy="5" r="1.4" opacity=".85"/><circle cx="5.5" cy="18.5" r="1" opacity=".7"/></svg></div>
+<div class="nav-item" data-nav="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Statistika</span></div>
+<div class="nav-item" data-nav="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Profil</span></div>
+</nav>
+
+<div class="modal-back" id="modalBack"><div class="modal" id="modal"><div class="grab"></div><h3 id="modalTitle">Yangi maqsad</h3><div class="fld"><label>Sarlavha</label><input id="mTitle" placeholder="Masalan: Kitob o'qish"></div><div class="fld"><label>Tavsif (ixtiyoriy)</label><textarea id="mDesc" placeholder="Qisqacha izoh..."></textarea></div><div class="row gap-12 mt-8"><button class="btn btn-ghost" id="mCancel">Bekor</button><button class="btn" id="mSave">Saqlash</button></div></div></div>
+
+<div class="modal-back" id="planModalBack"><div class="modal"><div class="grab"></div><h3 id="planModalTitle">Yangi reja</h3>
+<div class="fld"><label>Sarlavha</label><input id="pTitle" placeholder="Masalan: Ertalabki yugurish"></div>
+<div class="fld"><label>Tavsif (ixtiyoriy)</label><textarea id="pDesc" placeholder="Qisqacha izoh..."></textarea></div>
+<div class="row gap-12"><div class="fld" style="flex:1"><label>Eslatma vaqti</label><input id="pTime" type="time" value="08:00"></div><div class="fld" style="flex:1"><label>Sana</label><input id="pDate" type="date"></div></div>
+<div class="row gap-12 mt-8"><button class="btn btn-ghost" id="pCancel">Bekor</button><button class="btn" id="pSave">Saqlash</button></div></div></div>
+
+<div class="modal-back" id="dayModalBack"><div class="modal"><div class="grab"></div><h3 id="dayModalTitle">Kun maqsadlari</h3><div id="dayModalList"></div><div class="row gap-12 mt-8"><button class="btn btn-ghost" id="dayClose">Yopish</button><button class="btn" id="dayAdd">+ Qo'shish</button></div></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg=window.Telegram?.WebApp;try{tg?.ready();tg?.expand();tg?.enableClosingConfirmation?.();}catch(_){}
+const API='';
+const State={telegramId:null,user:null,plans:[],goals:[],goalPeriod:'yearly',dailyView:'week',selectedDate:new Date(),diaryWeekStart:null,calMonth:new Date(),selectedYear:new Date().getFullYear(),selectedMonth:new Date().getMonth(),weekOffset:0,modal:{period:'yearly',periodKey:null,id:null},planModal:{id:null},plansRange:[],theme:localStorage.getItem('iz_theme')||'default',mode:localStorage.getItem('iz_mode')||'light'};
+
+const UZ_MONTHS=['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+const UZ_MONTHS_SHORT=['Yan','Fev','Mar','Apr','May','Iyn','Iyl','Avg','Sen','Okt','Noy','Dek'];
+const UZ_DOW_SHORT=['Du','Se','Cho','Pa','Ju','Sha','Ya'];
+const UZ_DOW_FULL=['Dushanba','Seshanba','Chorshanba','Payshanba','Juma','Shanba','Yakshanba'];
+
+const pad=n=>n<10?'0'+n:''+n;
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+function isoWeek(d){const dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const dn=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-dn);const ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return{year:dt.getUTCFullYear(),week:Math.ceil((((dt-ys)/86400000)+1)/7)};}
+const weekKey=d=>{const w=isoWeek(d);return w.year+'-W'+pad(w.week);};
+function startOfWeek(d){const x=new Date(d);const dy=x.getDay();const df=dy===0?-6:1-dy;x.setDate(x.getDate()+df);x.setHours(0,0,0,0);return x;}
+function endOfWeek(d){const s=startOfWeek(d);const e=new Date(s);e.setDate(s.getDate()+6);return e;}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+const formatDateLong=d=>UZ_DOW_FULL[(d.getDay()+6)%7]+', '+d.getDate()+' '+UZ_MONTHS_SHORT[d.getMonth()].toLowerCase();
+const formatRange=(a,b)=>a.getMonth()===b.getMonth()?a.getDate()+'–'+b.getDate()+' '+UZ_MONTHS_SHORT[a.getMonth()]:a.getDate()+' '+UZ_MONTHS_SHORT[a.getMonth()]+' – '+b.getDate()+' '+UZ_MONTHS_SHORT[b.getMonth()];
+
+function initUser(){const u=tg?.initDataUnsafe?.user;if(u){State.telegramId=u.id;State.user=u;}else{State.telegramId=parseInt(localStorage.getItem('iz_demo_id')||'12345',10);State.user={id:State.telegramId,first_name:'Foydalanuvchi',username:'demo'};}
+const nm=State.user.first_name||'Foydalanuvchi';const ini=(nm[0]||'A').toUpperCase();
+document.getElementById('userName').textContent=nm;document.getElementById('profName').textContent=nm;document.getElementById('profAv').textContent=ini;document.getElementById('profUn').textContent=State.user.username?'@'+State.user.username:'';document.getElementById('todayDate').textContent=formatDateLong(new Date());}
+
+async function api(path,opts={}){const url=API+path+(path.includes('?')?'&':'?')+'telegram_id='+State.telegramId;const res=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});if(!res.ok)throw new Error('API '+res.status);return res.json();}
+
+async function loadPlansAPI(){try{const d=await api('/api/webapp/plans');State.plans=d.plans||[];if(d.user){State.user={...State.user,...d.user};document.getElementById('streakCount').textContent=d.user.streak||0;document.getElementById('msScore').textContent=d.user.total_score||0;document.getElementById('stStreak').textContent=d.user.streak||0;document.getElementById('stTotal').textContent=d.user.total_score||0;document.getElementById('pfStreak').textContent=d.user.streak||0;document.getElementById('pfScore').textContent=d.user.total_score||0;}document.getElementById('msPlans').textContent=State.plans.length;renderPlans();renderHero();}catch(e){console.warn('plans',e);State.plans=[];renderPlans();}}async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}document.getElementById('msGoals').textContent=State.goals.length;document.getElementById('stGoals').textContent=State.goals.filter(g=>!g.completed).length;const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;document.getElementById('stDone').textContent=done;document.getElementById('pfDone').textContent=done;renderGoalsView();}
+
+async function loadPlansRange(){try{const tod=new Date();const df=ymd(addDays(tod,-29));const dt=ymd(tod);const d=await api('/api/webapp/plans?date_from='+df+'&date_to='+dt);State.plansRange=d.plans||[];}catch(e){console.warn('range',e);State.plansRange=State.plans;}}
+
+const apiGoalCreate=p=>api('/api/webapp/goals',{method:'POST',body:JSON.stringify(p)});
+const apiGoalUpdate=(id,p)=>api('/api/webapp/goals/'+id,{method:'PUT',body:JSON.stringify(p)});
+const apiGoalDelete=id=>api('/api/webapp/goals/'+id,{method:'DELETE'});
+const apiPlanCreate=p=>api('/api/webapp/plans',{method:'POST',body:JSON.stringify(p)});
+const apiPlanUpdate=(id,p)=>api('/api/webapp/plans/'+id,{method:'PUT',body:JSON.stringify(p)});
+const apiPlanDelete=id=>api('/api/webapp/plans/'+id,{method:'DELETE'});
+
+function renderHero(){
+  const snap=State.snap||{};
+  const lvl=snap.level||1;
+  const xpInLvl=snap.xp_in_level||0;
+  const xpNeed=snap.xp_needed||100;
+  const pct=snap.xp_percent||0;
+  const ds=snap.discipline_score!=null?snap.discipline_score:50;
+  const streak=snap.streak||State.user?.streak||0;
+  const tDone=snap.today_done||0;
+  const tTot=snap.today_total||0;
+  document.getElementById('rankEmoji').textContent=snap.rank_emoji||'🌱';
+  document.getElementById('rankTitle').textContent=snap.rank_title||'Boshlovchi';
+  document.getElementById('levelNum').textContent=lvl;
+  document.getElementById('xpInLvl').textContent=xpInLvl;
+  document.getElementById('xpNeeded').textContent=xpNeed;
+  document.getElementById('xpPctLabel').textContent=pct+'%';
+  document.getElementById('totalXpLabel').textContent=(snap.xp||0)+' XP';
+  document.getElementById('streakCount').textContent=streak;
+  document.getElementById('todayStat').textContent=tDone+'/'+tTot;
+  const riskChip=document.getElementById('streakRiskChip');
+  if(snap.streak_at_risk&&streak>=2){riskChip.classList.add('warn');riskChip.innerHTML='<span class="em">⚠️</span> Streak xavf ostida';}else{riskChip.classList.remove('warn');riskChip.innerHTML='<span class="em">📋</span> '+tDone+'/'+tTot+' bugun';}
+  setTimeout(()=>{document.getElementById('xpBar').style.width=pct+'%';const C=2*Math.PI*42;document.getElementById('dsRing').setAttribute('stroke-dashoffset',String(C*(1-ds/100)));document.getElementById('dsValue').textContent=ds;},120);
+}
+
+async function loadSnapshot(){try{const s=await api('/api/webapp/stats');State.snap=s;State.user=Object.assign({},State.user||{},{streak:s.streak,total_score:State.user?.total_score||0});const prevAchs=State.knownAchs||new Set();const newAchs=[];(s.achievements||[]).forEach(a=>{if(!prevAchs.has(a.code)){if(prevAchs.size>0)newAchs.push(a);prevAchs.add(a.code);}});State.knownAchs=prevAchs;renderHero();if(newAchs.length){newAchs.forEach((a,i)=>setTimeout(()=>showUnlock(a),i*900));}document.getElementById('pfStreak').textContent=s.streak||0;document.getElementById('stStreak').textContent=s.streak||0;}catch(e){console.warn('snapshot',e);}}
+
+async function loadQuest(){try{const q=await api('/api/webapp/quest');const c=document.getElementById('questCard');c.style.display='flex';c.classList.toggle('done',!!q.completed);document.getElementById('qIcon').textContent=q.icon||'🎯';document.getElementById('qTitle').textContent=q.title||'';document.getElementById('qSub').textContent=q.subtitle||'';const pct=q.target?Math.round((q.progress||0)*100/q.target):0;setTimeout(()=>{document.getElementById('qProg').style.width=pct+'%';},150);document.getElementById('qMetaProg').textContent=(q.progress||0)+'/'+(q.target||0);document.getElementById('qReward').textContent=q.reward_xp?('+'+q.reward_xp+' XP'):'✓';}catch(e){console.warn('quest',e);}}
+
+async function loadCoach(){try{const m=await api('/api/webapp/coach');document.getElementById('coachIco').textContent=m.icon||'✨';document.getElementById('coachMsg').textContent=m.text||'';document.getElementById('coachTag').textContent=(m.tone||'coach').toUpperCase();}catch(e){console.warn('coach',e);}}
+
+async function loadCheckin(){try{const c=await api('/api/webapp/checkin');if(!c)return;if(c.mood){document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===c.mood));State.checkinMood=c.mood;}if(c.energy){document.querySelectorAll('#energyRow .energy-cell').forEach(p=>p.classList.toggle('active',+p.dataset.en===c.energy));State.checkinEnergy=c.energy;}if(c.intent){document.getElementById('intentTxt').value=c.intent;document.getElementById('intentSavedInfo').textContent='✓ Saqlangan';}if(c.reflection){document.getElementById('reflectTxt').value=c.reflection;document.getElementById('reflectSavedInfo').textContent='✓ Saqlangan';}}catch(e){console.warn('checkin',e);}}
+
+async function saveCheckin(payload){try{await api('/api/webapp/checkin',{method:'POST',body:JSON.stringify(payload)});}catch(_){toast('Saqlashda xato',true);}}
+
+function renderInsights(){
+  const PR=State.plansRange.length?State.plansRange:State.plans;
+  const tod=new Date();
+  const last7=PR.filter(p=>p.plan_date&&new Date(p.plan_date)>=addDays(tod,-7));
+  const done7=last7.filter(p=>p.status==='done').length;
+  const total7=last7.length;
+  const rate=total7?Math.round(done7*100/total7):0;
+  const streak=State.snap?.streak||0;
+  const ds=State.snap?.discipline_score||50;
+  const items=[];
+  if(streak>=7)items.push({ic:'🔥',t:'Sen olov ustidasan',d:streak+' kunlik streak — top 5% foydalanuvchi.'});
+  if(ds>=75)items.push({ic:'💎',t:'Discipline elite zonada',d:'Sen endi qiluvchi emas — qiluvchi shaxssan.'});
+  if(rate>=80&&total7>=5)items.push({ic:'⚡',t:'Hafta zo\'r ketdi',d:done7+'/'+total7+' reja bajarildi (yuqori darajada).'});
+  if(rate<40&&total7>=5)items.push({ic:'📈',t:'Bu hafta sustroq',d:'Bitta yengil reja qo\'shsang — momentum tiklanadi.'});
+  if(ds<40)items.push({ic:'🎯',t:'Discipline tushyapti',d:'Bugun bitta kichik narsani bajar — score yana ko\'tarilad.'});
+  if(streak===0&&PR.length>0)items.push({ic:'🌱',t:'Yangi boshlanish',d:'Birinchi qadam — eng qiyini. Ammo eng muhimi.'});
+  if(!items.length)items.push({ic:'✨',t:'Hammasi joyida',d:'Davom et. Sen to\'g\'ri yo\'ldasan.'});
+  document.getElementById('insights').innerHTML=items.map(i=>`<div class="insight"><div class="ic">${i.ic}</div><div class="body"><div class="t">${esc(i.t)}</div><div class="d">${esc(i.d)}</div></div></div>`).join('');
+}
+
+function showUnlock(a){const ov=document.getElementById('unlockOverlay');document.getElementById('unlockIcon').textContent=a.icon||'🏆';document.getElementById('unlockTitle').textContent=a.title||'';document.getElementById('unlockRarity').textContent=(a.rarity||'common').toUpperCase();ov.classList.add('show');confetti(50);try{tg?.HapticFeedback?.notificationOccurred('success');}catch(_){}}
+
+function confetti(n){const colors=['#14b8a6','#06b6d4','#f59e0b','#ec4899','#a855f7','#22c55e','#f43f5e','#3b82f6'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='confetti-piece';p.style.background=colors[i%colors.length];p.style.left=(50+(Math.random()-.5)*40)+'%';p.style.top='-20px';p.style.setProperty('--cx',((Math.random()-.5)*400)+'px');p.style.animationDuration=(1.5+Math.random()*1.5)+'s';p.style.animationDelay=(Math.random()*0.3)+'s';document.body.appendChild(p);setTimeout(()=>p.remove(),3500);}}
+
+function xpPop(amount){const el=document.createElement('div');el.className='xp-pop';el.textContent='+'+amount+' XP';document.body.appendChild(el);setTimeout(()=>el.remove(),1600);try{tg?.HapticFeedback?.impactOccurred('medium');}catch(_){}}
+
+
+function renderPlans(){const w=document.getElementById('plansList');if(!State.plans.length){w.innerHTML=emptyState('📋','Hozircha rejalar yo\'q','+ tugmasi orqali yangi reja qo\'shing');return;}w.innerHTML=State.plans.map((p,i)=>`<div class="plan ${p.status==='done'?'done':''}" data-id="${p.id}" style="animation-delay:${i*60}ms"><div class="cbx ${p.status==='done'?'done':''}" data-act="toggle">${p.status==='done'?'✓':''}</div><div class="body"><div class="ttl">${esc(p.title)}</div><div class="meta">${p.scheduled_time||'Vaqt yo\'q'}${p.description?' • '+esc(p.description):''}</div></div><div class="score">+${p.score_value||0}</div><div class="actions"><button class="edit" data-act="edit" aria-label="Tahrirlash"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></button><button class="del" data-act="del" aria-label="O'chirish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M19 6l-2 14H7L5 6m5 4v6m4-6v6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button></div></div>`).join('');bindPlanActions();}
+
+function bindPlanActions(){document.querySelectorAll('#plansList .plan').forEach(row=>{const id=+row.dataset.id;row.querySelector('[data-act="toggle"]').onclick=async e=>{e.stopPropagation();const p=State.plans.find(x=>x.id===id);if(!p)return;const ns=p.status==='done'?'pending':'done';try{const wasNotDone=p.status!=='done';const np=await apiPlanUpdate(id,{status:ns});Object.assign(p,np);renderPlans();renderHero();if(ns==='done'&&wasNotDone){const sv=p.score_value||5;xpPop(sv);confetti(35);}toast(ns==='done'?'✓ Bajarildi':'Belgilash olindi');loadSnapshot();loadQuest();}catch(_){toast('Xato!',true);}};row.querySelector('[data-act="edit"]').onclick=e=>{e.stopPropagation();const p=State.plans.find(x=>x.id===id);if(p)openPlanModal(p);};row.querySelector('[data-act="del"]').onclick=async e=>{e.stopPropagation();if(!confirm('Rejani o\'chirishni xohlaysizmi?'))return;try{await apiPlanDelete(id);State.plans=State.plans.filter(x=>x.id!==id);renderPlans();renderHero();toast('🗑 O\'chirildi');}catch(_){toast('Xato!',true);}};});}
+
+function renderGoalsView(){['Yearly','Monthly','Weekly','Daily'].forEach(k=>document.getElementById('gv'+k).classList.toggle('hidden',State.goalPeriod!==k.toLowerCase()));if(State.goalPeriod==='yearly')renderYearly();else if(State.goalPeriod==='monthly')renderMonthly();else if(State.goalPeriod==='weekly')renderWeekly();else renderDaily();}
+
+const goalsBy=(t,p)=>State.goals.filter(g=>g.goal_type===t&&(!p||g.period===p));
+
+function renderYearly(){const g=document.getElementById('yearChips');const cur=new Date().getFullYear();const ys=[];for(let y=cur+3;y>=cur-3;y--)ys.push(y);g.innerHTML=ys.map(y=>{const c=goalsBy('yearly',String(y)).length;const sel=State.selectedYear===y;return `<div class="year-chip ${sel?'active':''}" data-year="${y}"><div class="y">${y}</div><div class="c">${c} maqsad</div></div>`;}).join('');g.querySelectorAll('.year-chip').forEach(c=>c.onclick=()=>{State.selectedYear=+c.dataset.year;renderYearly();});renderYearlyList();}
+function renderYearlyList(){const l=goalsBy('yearly',String(State.selectedYear));document.getElementById('yearlyList').innerHTML=renderGoalList(l,State.selectedYear+'-yil uchun maqsadlar');bindGoalActions('yearlyList');}
+
+function renderMonthly(){const g=document.getElementById('monthsGrid');const cM=new Date().getMonth(),cY=new Date().getFullYear();g.innerHTML=UZ_MONTHS.map((m,i)=>{const k=State.selectedYear+'-'+pad(i+1);const c=goalsBy('monthly',k).length;const ic=i===cM&&State.selectedYear===cY;const sel=State.selectedMonth===i;return `<div class="month-cell ${ic?'current':''}" data-m="${i}" style="${sel?'border-color:var(--primary);background:var(--primary-soft)':''}"><div class="mn">${UZ_MONTHS_SHORT[i]}</div><div class="ct">${c}</div>${c?'<div class="dot"></div>':''}</div>`;}).join('');g.querySelectorAll('.month-cell').forEach(c=>c.onclick=()=>{State.selectedMonth=+c.dataset.m;renderMonthly();});renderMonthlyList();}
+function renderMonthlyList(){const k=State.selectedYear+'-'+pad(State.selectedMonth+1);const l=goalsBy('monthly',k);document.getElementById('monthlyList').innerHTML=renderGoalList(l,UZ_MONTHS[State.selectedMonth]+' '+State.selectedYear+' maqsadlari');bindGoalActions('monthlyList');}
+
+function renderWeekly(){const base=addDays(new Date(),State.weekOffset*7);const s=startOfWeek(base),e=endOfWeek(base);document.getElementById('weekRange').textContent=formatRange(s,e);const tod=ymd(new Date());document.getElementById('weekStrip').innerHTML=UZ_DOW_SHORT.map((n,i)=>{const d=addDays(s,i);const it=ymd(d)===tod;return `<div class="wd ${it?'today':''}"><div class="n">${n}</div><div class="d">${d.getDate()}</div></div>`;}).join('');const wk=weekKey(base);const l=goalsBy('weekly',wk);document.getElementById('weeklyList').innerHTML=renderGoalList(l,'Hafta uchun umumiy maqsadlar');bindGoalActions('weeklyList');}
+
+function renderDaily(){document.getElementById('dvWeek').classList.toggle('hidden',State.dailyView!=='week');document.getElementById('dvMonth').classList.toggle('hidden',State.dailyView!=='month');const items=document.querySelectorAll('#dvToggle .dv-toggle-item');const ind=document.getElementById('dvInd');const ai=State.dailyView==='week'?0:1;items.forEach((it,i)=>it.classList.toggle('active',i===ai));setTimeout(()=>{const w=items[ai].offsetWidth,x=items[ai].offsetLeft;ind.style.left=x+'px';ind.style.width=w+'px';},10);if(State.dailyView==='week')renderDiary();else renderCalendar();renderDailyList();}
+
+function renderDiary(){if(!State.diaryWeekStart)State.diaryWeekStart=startOfWeek(new Date());const s=State.diaryWeekStart;const e=addDays(s,6);document.getElementById('diaryRange').textContent=formatRange(s,e);const tod=ymd(new Date());const cell=i=>{const d=addDays(s,i);const k=ymd(d);const gs=goalsBy('daily',k);const it=k===tod;const gh=gs.length?`<div class="dgoals">${gs.slice(0,3).map(g=>`<div class="g">${esc(g.title)}</div>`).join('')}${gs.length>3?`<div class="g">+${gs.length-3} ko\'proq</div>`:''}</div>`:`<div class="empty">Maqsad qo\'shing</div>`;const isSel=k===ymd(State.selectedDate);return `<div class="diary-page ${it?'today':''} ${isSel?'selected':''} ${(i%2===0)?'right':'left'}" data-day="${k}"><div class="dh"><span class="dn">${UZ_DOW_SHORT[i]}</span><span class="dd">${d.getDate()}</span></div>${gh}</div>`;};document.getElementById('diaryGrid').innerHTML=[0,1,2,3,4,5].map(cell).join('');const sun=addDays(s,6);const sk=ymd(sun);const sg=goalsBy('daily',sk);const ist=sk===tod;document.getElementById('diarySunday').classList.toggle('selected',sk===ymd(State.selectedDate)&&sk!==tod);document.getElementById('diarySunday').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px"><span style="font-size:13px;color:var(--text-2);font-weight:700">${UZ_DOW_FULL[6]} ${ist?'(Bugun)':''}</span><span style="font-size:18px;font-weight:800;color:var(--primary)">${sun.getDate()}</span></div>${sg.length?`<div style="font-size:12px;color:var(--text-2)">${sg.slice(0,3).map(g=>`<div style="display:flex;gap:6px;margin-bottom:3px"><span style="color:var(--primary);font-weight:700">•</span>${esc(g.title)}</div>`).join('')}${sg.length>3?`<div style="color:var(--text-3);margin-top:2px">+${sg.length-3} ko\'proq</div>`:''}</div>`:`<div style="font-size:12px;color:var(--text-3);font-style:italic">Yakshanba uchun maqsad qo\'shing</div>`}`;document.getElementById('diarySunday').dataset.day=sk;document.querySelectorAll('.diary-page, .diary-sunday').forEach(p=>p.onclick=()=>{State.selectedDate=new Date(p.dataset.day+'T00:00:00');renderDiary();renderDailyList();});}
+
+function renderCalendar(){const cm=State.calMonth;const y=cm.getFullYear(),m=cm.getMonth();document.getElementById('calTitle').textContent=UZ_MONTHS[m]+' '+y;const first=new Date(y,m,1);const fdow=(first.getDay()+6)%7;const dim=new Date(y,m+1,0).getDate();const tod=ymd(new Date());const sel=ymd(State.selectedDate);let cells='';for(let i=0;i<fdow;i++)cells+=`<div class="cal-day empty"></div>`;for(let d=1;d<=dim;d++){const dt=new Date(y,m,d);const k=ymd(dt);const gs=goalsBy('daily',k);const it=k===tod;const isSel=k===sel;const he=gs.length>0;const max=2;const evs=gs.slice(0,max).map((g,i)=>`<div class="ev c${(i%3)+1}" title="${esc(g.title)}">${esc(g.title)}</div>`).join('');const more=gs.length>max?`<div class="more">+${gs.length-max} more</div>`:'';cells+=`<div class="cal-day ${it?'today':''} ${isSel?'selected':''} ${he?'has-events':''}" data-day="${k}"><div class="dn">${d}</div><div class="events">${evs}${more}</div></div>`;}document.getElementById('calGrid').innerHTML=cells;document.querySelectorAll('.cal-day:not(.empty)').forEach(c=>c.onclick=()=>{const k=c.dataset.day;State.selectedDate=new Date(k+'T00:00:00');renderCalendar();renderDailyList();});}
+
+function openDayModal(k,gs){const d=new Date(k+'T00:00:00');document.getElementById('dayModalTitle').textContent=formatDateLong(d);const list=document.getElementById('dayModalList');list.innerHTML=gs.length?gs.map(g=>`<div class="goal ${g.completed?'done':''}" data-id="${g.id}"><div class="cbx ${g.completed?'done':''}" data-act="toggle">${g.completed?'✓':''}</div><div class="body"><div class="ttl">${esc(g.title)}</div>${g.description?`<div class="desc">${esc(g.description)}</div>`:''}</div><button class="del" data-act="delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M19 6l-2 14H7L5 6"/></svg></button></div>`).join(''):'<div class="empty-state"><p>Hozircha maqsadlar yo\'q</p></div>';document.getElementById('dayModalBack').classList.add('show');list.querySelectorAll('.goal').forEach(row=>{const id=+row.dataset.id;row.querySelector('[data-act="toggle"]').onclick=async()=>{const g=State.goals.find(x=>x.id===id);if(!g)return;const nv=!g.completed;try{await apiGoalUpdate(id,{completed:nv});g.completed=nv;openDayModal(k,goalsBy('daily',k));renderGoalsView();}catch(_){toast('Xato!',true);}};row.querySelector('[data-act="delete"]').onclick=async()=>{if(!confirm('O\'chirilsinmi?'))return;try{await apiGoalDelete(id);State.goals=State.goals.filter(x=>x.id!==id);openDayModal(k,goalsBy('daily',k));renderGoalsView();}catch(_){toast('Xato!',true);}};});document.getElementById('dayAdd').onclick=()=>{document.getElementById('dayModalBack').classList.remove('show');State.selectedDate=d;openModal('daily',k);};document.getElementById('dayClose').onclick=()=>document.getElementById('dayModalBack').classList.remove('show');}
+
+function renderDailyList(){const k=ymd(State.selectedDate);const l=goalsBy('daily',k);document.getElementById('dailyTitleText').textContent=formatDateLong(State.selectedDate)+' maqsadlari';document.getElementById('dailyList').innerHTML=renderGoalList(l,'');bindGoalActions('dailyList');}
+
+function renderGoalList(list,emp){if(!list.length)return emptyState('🎯',emp||'Hech narsa yo\'q','+ tugma orqali yangi maqsad qo\'shing');return list.map((g,i)=>`<div class="goal ${g.completed?'done':''}" style="animation-delay:${i*50}ms" data-id="${g.id}"><div class="cbx ${g.completed?'done':''}" data-act="toggle">${g.completed?'✓':''}</div><div class="body"><div class="ttl">${esc(g.title)}</div>${g.description?`<div class="desc">${esc(g.description)}</div>`:''}</div><button class="del" data-act="edit" aria-label="Tahrirlash" style="color:var(--text-3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></button><button class="del" data-act="delete" aria-label="O'chirish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M19 6l-2 14H7L5 6m5 4v6m4-6v6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg></button></div>`).join('');}
+
+function bindGoalActions(cid){const w=document.getElementById(cid);w.querySelectorAll('.goal').forEach(row=>{const id=+row.dataset.id;row.querySelector('[data-act="toggle"]').onclick=async e=>{e.stopPropagation();const g=State.goals.find(x=>x.id===id);if(!g)return;const nv=!g.completed;g.completed=nv;row.classList.toggle('done',nv);row.querySelector('.cbx').classList.toggle('done',nv);row.querySelector('.cbx').textContent=nv?'✓':'';try{await apiGoalUpdate(id,{completed:nv});toast(nv?'✓ Bajarildi':'Belgilash olindi');}catch(_){toast('Xato!',true);}};const eb=row.querySelector('[data-act="edit"]');if(eb)eb.onclick=e=>{e.stopPropagation();const g=State.goals.find(x=>x.id===id);if(g)openModal(g.goal_type,g.period,g);};row.querySelector('[data-act="delete"]').onclick=async e=>{e.stopPropagation();if(!confirm('Maqsadni o\'chirishni xohlaysizmi?'))return;try{await apiGoalDelete(id);State.goals=State.goals.filter(x=>x.id!==id);renderGoalsView();toast('🗑 O\'chirildi');}catch(_){toast('Xato!',true);}};});}
+
+function moveGoalSegInd(){const ind=document.getElementById('goalSegInd');const a=document.querySelector('#goalSeg .seg-item.active');if(!a)return;ind.style.left=a.offsetLeft+'px';ind.style.width=a.offsetWidth+'px';}
+
+async function renderStats(){await loadPlansRange();const PR=State.plansRange.length?State.plansRange:State.plans;const tod=new Date();const bars=[];for(let i=6;i>=0;i--){const d=addDays(tod,-i);const k=ymd(d);const c=PR.filter(p=>p.plan_date===k&&p.status==='done').length+State.goals.filter(g=>g.period===k&&g.completed).length;bars.push({d,cnt:c});}const mx=Math.max(1,...bars.map(b=>b.cnt));document.getElementById('weekBars').innerHTML=bars.map(b=>`<div class="bar-col"><div class="bar" data-v="${b.cnt}" style="height:0px"></div><div class="lb">${UZ_DOW_SHORT[(b.d.getDay()+6)%7]}</div></div>`).join('');setTimeout(()=>{document.querySelectorAll('#weekBars .bar').forEach((bar,i)=>{const h=Math.max(6,(bars[i].cnt/mx)*110);bar.style.height=h+'px';});},100);renderTrend(30);const heat=document.getElementById('heatGrid');const cells=[];for(let i=0;i<98;i++){const d=addDays(tod,-(97-i));const c=PR.filter(p=>p.plan_date===ymd(d)&&p.status==='done').length;const l=c===0?0:c<2?1:c<4?2:c<6?3:4;cells.push(`<div class="heat-cell" data-l="${l}" title="${ymd(d)}: ${c}"></div>`);}heat.innerHTML=cells.join('');const aG=State.goals;const dG=aG.filter(g=>g.completed).length;const pct=aG.length?Math.round(dG*100/aG.length):0;document.getElementById('goalDonutPill').textContent=pct+'%';const C=2*Math.PI*46;setTimeout(()=>{document.getElementById('donut').setAttribute('stroke-dashoffset',String(C*(1-pct/100)));},200);const types=['yearly','monthly','weekly','daily'];const labels=['Yillik','Oylik','Haftalik','Kunlik'];document.getElementById('goalBreakdown').innerHTML=types.map((t,i)=>{const tot=State.goals.filter(g=>g.goal_type===t).length;const dn=State.goals.filter(g=>g.goal_type===t&&g.completed).length;const p=tot?Math.round(dn*100/tot):0;return `<div style="display:flex;align-items:center;gap:8px;font-size:11.5px"><span style="width:60px;color:var(--text-2);font-weight:600">${labels[i]}</span><div style="flex:1;height:6px;background:var(--border);border-radius:999px;overflow:hidden"><div style="width:${p}%;height:100%;background:var(--grad);border-radius:999px;transition:width 1s ease"></div></div><span style="font-weight:700;color:var(--primary);min-width:38px;text-align:right">${dn}/${tot}</span></div>`;}).join('');renderAchs();document.getElementById('stStreakDelta').textContent=Math.min(7,State.user?.streak||0);document.getElementById('stTotalDelta').textContent=PR.filter(p=>p.status==='done'&&new Date(p.plan_date)>=addDays(tod,-7)).reduce((s,p)=>s+(p.score_value||0),0);renderExtraStats(PR);}
+
+function renderExtraStats(PR){const el=document.getElementById('extraStats');if(!el)return;const tot=PR.length;const dn=PR.filter(p=>p.status==='done').length;const rate=tot?Math.round(dn*100/tot):0;const byDay={};PR.forEach(p=>{if(p.status==='done'){byDay[p.plan_date]=(byDay[p.plan_date]||0)+(p.score_value||0);}});const days=Object.keys(byDay);let best={d:'—',v:0};days.forEach(k=>{if(byDay[k]>best.v)best={d:k,v:byDay[k]};});const avg=days.length?Math.round(days.reduce((s,k)=>s+byDay[k],0)/days.length):0;const bestLabel=best.d!=='—'?new Date(best.d+'T00:00:00').getDate()+' '+UZ_MONTHS_SHORT[new Date(best.d+'T00:00:00').getMonth()]:'—';el.innerHTML=`<div class="stat-card"><div class="ic-bg">📈</div><div class="l">Bajarish %</div><div class="v">${rate}%</div><div class="ch">${dn}/${tot} reja (30 kun)</div></div><div class="stat-card"><div class="ic-bg">⚡</div><div class="l">O'rtacha ball</div><div class="v">${avg}</div><div class="ch">Kuniga</div></div><div class="stat-card"><div class="ic-bg">🏅</div><div class="l">Eng yaxshi kun</div><div class="v" style="font-size:18px">${bestLabel}</div><div class="ch">+${best.v} ball</div></div><div class="stat-card"><div class="ic-bg">📅</div><div class="l">Faol kunlar</div><div class="v">${days.length}</div><div class="ch">30 kun ichida</div></div>`;}
+
+function renderTrend(days){const PR=State.plansRange.length?State.plansRange:State.plans;const tod=new Date();const pts=[];for(let i=days-1;i>=0;i--){const d=addDays(tod,-i);const k=ymd(d);const sc=PR.filter(p=>p.plan_date===k&&p.status==='done').reduce((s,p)=>s+(p.score_value||0),0)+State.goals.filter(g=>g.period===k&&g.completed).length*5;pts.push(sc);}const W=320,H=160,P=8;const mx=Math.max(...pts,1);const step=(W-P*2)/(pts.length-1);const points=pts.map((v,i)=>[P+i*step,H-P-(v/mx)*(H-P*2)]);let line='M '+points[0][0].toFixed(1)+' '+points[0][1].toFixed(1);for(let i=1;i<points.length;i++){const x0=points[i-1][0],y0=points[i-1][1],x1=points[i][0],y1=points[i][1];const cx=(x0+x1)/2;line+=' C '+cx.toFixed(1)+' '+y0.toFixed(1)+', '+cx.toFixed(1)+' '+y1.toFixed(1)+', '+x1.toFixed(1)+' '+y1.toFixed(1);}const area=line+' L '+points[points.length-1][0].toFixed(1)+' '+H+' L '+points[0][0].toFixed(1)+' '+H+' Z';document.getElementById('trendG').innerHTML='<path class="area-path" d="'+area+'"/><path class="area-line" d="'+line+'"/>'+points.map((p,i)=>i%Math.ceil(points.length/6)===0||i===points.length-1?'<circle class="area-dot" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3"/>':'').join('');}
+
+function renderAchs(){const st=State.user?.streak||0;const sc=State.user?.total_score||0;const dn=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;const list=[{ic:'🔥',nm:'Olov',ds:'3 kun streak',un:st>=3},{ic:'⚡',nm:'Yashin',ds:'7 kun streak',un:st>=7},{ic:'💎',nm:'Olmos',ds:'30 kun streak',un:st>=30},{ic:'🎯',nm:'Aniq',ds:'10 maqsad',un:dn>=10},{ic:'🏆',nm:'Chempion',ds:'100 ball',un:sc>=100},{ic:'👑',nm:'Qirol',ds:'500 ball',un:sc>=500}];document.getElementById('achs').innerHTML=list.map(a=>`<div class="ach ${a.un?'':'locked'}"><div class="ic">${a.ic}</div><div class="nm">${a.nm}</div><div class="ds">${a.ds}</div></div>`).join('');}
+
+const THEMES=[{k:'default',n:'Asl holat',g:'linear-gradient(135deg,#14b8a6,#06b6d4)'},{k:'sprout',n:'Sprout',g:'linear-gradient(135deg,#22c55e,#84cc16)'},{k:'spectrum',n:'Spectrum',g:'linear-gradient(135deg,#f43f5e,#8b5cf6,#06b6d4)'},{k:'gamma',n:'Gamma',g:'linear-gradient(135deg,#a855f7,#7c3aed)'},{k:'atmosphere',n:'Atmosphere',g:'linear-gradient(135deg,#0ea5e9,#6366f1)'},{k:'gold',n:'Gold Leaf',g:'linear-gradient(135deg,#f5d76e,#d4a017)'}];
+function renderThemes(){const g=document.getElementById('themeGrid');g.innerHTML=THEMES.map(t=>`<div class="theme-tile ${State.theme===t.k?'active':''}" data-th="${t.k}"><div class="sw" style="background:${t.g}"></div><div class="nm">${t.n}</div></div>`).join('');g.querySelectorAll('.theme-tile').forEach(t=>t.onclick=()=>{State.theme=t.dataset.th;document.documentElement.setAttribute('data-theme',State.theme);localStorage.setItem('iz_theme',State.theme);renderThemes();toast('🎨 Tema o\'zgartirildi');if(document.querySelector('.page[data-page="stats"]').classList.contains('active'))renderStats();});}
+
+function applyMode(){document.documentElement.setAttribute('data-mode',State.mode);document.getElementById('darkToggle').classList.toggle('on',State.mode==='dark');document.getElementById('modeIcon').textContent=State.mode==='dark'?'🌙':'☀️';}
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const emptyState=(ic,t,p)=>`<div class="empty-state"><div class="ico">${ic}</div><h4>${esc(t)}</h4><p>${esc(p)}</p></div>`;
+function toast(msg,danger){const el=document.getElementById('toast');el.textContent=msg;el.style.background=danger?'var(--danger)':'';el.style.color=danger?'#fff':'';el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2000);}
+
+function openModal(period,periodKey,goal){State.modal={period,periodKey,id:goal?goal.id:null};const lb={yearly:'yillik',monthly:'oylik',weekly:'haftalik',daily:'kunlik'};document.getElementById('modalTitle').textContent=(goal?'Tahrirlash: ':'Yangi ')+lb[period]+' maqsad';document.getElementById('mTitle').value=goal?goal.title:'';document.getElementById('mDesc').value=goal?goal.description||'':'';document.getElementById('modalBack').classList.add('show');setTimeout(()=>document.getElementById('mTitle').focus(),300);}
+function closeModal(){document.getElementById('modalBack').classList.remove('show');}
+async function saveModal(){const t=document.getElementById('mTitle').value.trim();if(!t){toast('Sarlavha bo\'sh',true);return;}const d=document.getElementById('mDesc').value.trim();try{if(State.modal.id){const ng=await apiGoalUpdate(State.modal.id,{title:t,description:d||null});const idx=State.goals.findIndex(g=>g.id===State.modal.id);if(idx>=0)State.goals[idx]={...State.goals[idx],...ng};toast('✓ Yangilandi');}else{const pl={title:t,description:d||null,goal_type:State.modal.period,period:State.modal.periodKey};const ng=await apiGoalCreate(pl);State.goals.push(ng);toast('✨ Maqsad qo\'shildi');}closeModal();renderGoalsView();document.getElementById('msGoals').textContent=State.goals.length;}catch(e){toast('Xato: '+e.message,true);}}
+
+function openPlanModal(plan){State.planModal={id:plan?plan.id:null};document.getElementById('planModalTitle').textContent=plan?'Rejani tahrirlash':'Yangi reja';document.getElementById('pTitle').value=plan?.title||'';document.getElementById('pDesc').value=plan?.description||'';document.getElementById('pTime').value=plan?.scheduled_time||'08:00';document.getElementById('pDate').value=(plan&&plan.plan_date)||ymd(new Date());document.getElementById('planModalBack').classList.add('show');setTimeout(()=>document.getElementById('pTitle').focus(),300);}
+function closePlanModal(){document.getElementById('planModalBack').classList.remove('show');}
+async function savePlanModal(){const t=document.getElementById('pTitle').value.trim();if(!t){toast('Sarlavha bo\'sh',true);return;}const desc=document.getElementById('pDesc').value.trim();const tm=document.getElementById('pTime').value||null;const dt=document.getElementById('pDate').value||ymd(new Date());const body={title:t,description:desc||null,scheduled_time:tm,plan_date:dt};try{if(State.planModal.id){const np=await apiPlanUpdate(State.planModal.id,body);const idx=State.plans.findIndex(x=>x.id===State.planModal.id);if(idx>=0)State.plans[idx]=np;toast('✓ Yangilandi');}else{const np=await apiPlanCreate(body);State.plans.unshift(np);toast('✨ Reja qo\'shildi');}closePlanModal();document.getElementById('msPlans').textContent=State.plans.length;renderPlans();renderHero();}catch(e){toast('Xato: '+e.message,true);}}
+
+function fabAction(){const ap=document.querySelector('.page.active').dataset.page;if(ap==='home'){openPlanModal(null);return;}if(ap==='goals'){let pk;if(State.goalPeriod==='yearly')pk=String(State.selectedYear);else if(State.goalPeriod==='monthly')pk=State.selectedYear+'-'+pad(State.selectedMonth+1);else if(State.goalPeriod==='weekly')pk=weekKey(addDays(new Date(),State.weekOffset*7));else pk=ymd(State.selectedDate);openModal(State.goalPeriod,pk);return;}}
+
+function updateFabVisibility(){/* inline add buttons now live inside sections */}
+
+function switchPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===n));document.querySelectorAll('.nav-item, .nav-ai').forEach(x=>x.classList.toggle('active',x.dataset.nav===n));if(n==='stats')renderStats();if(n==='goals'){renderGoalsView();requestAnimationFrame(moveGoalSegInd);}if(n==='ai'){loadCoach();loadCheckin();loadPlansRange().then(()=>renderInsights());}if(n==='home'){loadSnapshot();loadQuest();}updateFabVisibility();if(navigator.vibrate)navigator.vibrate(10);}
+
+function ripple(e){const t=e.currentTarget;const r=t.getBoundingClientRect();const ink=document.createElement('span');ink.className='ripple-ink';const sz=Math.max(r.width,r.height);ink.style.width=ink.style.height=sz+'px';ink.style.left=(e.clientX-r.left-sz/2)+'px';ink.style.top=(e.clientY-r.top-sz/2)+'px';t.appendChild(ink);setTimeout(()=>ink.remove(),600);}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.documentElement.setAttribute('data-theme',State.theme);applyMode();initUser();renderThemes();
+  document.querySelectorAll('.nav-item, .nav-ai').forEach(n=>n.onclick=()=>switchPage(n.dataset.nav));
+  const _ap=document.getElementById('addPlanBtn');if(_ap)_ap.onclick=e=>{ripple(e);openPlanModal(null);};document.querySelectorAll('.add-goal-trigger').forEach(b=>{b.onclick=e=>{ripple(e);const gp=b.dataset.gp||State.goalPeriod;let pk;if(gp==='yearly')pk=String(State.selectedYear);else if(gp==='monthly')pk=State.selectedYear+'-'+pad(State.selectedMonth+1);else if(gp==='weekly')pk=weekKey(addDays(new Date(),State.weekOffset*7));else pk=ymd(State.selectedDate);openModal(gp,pk);};});
+  document.getElementById('modeBtn').onclick=()=>{State.mode=State.mode==='dark'?'light':'dark';localStorage.setItem('iz_mode',State.mode);applyMode();toast(State.mode==='dark'?'🌙 Tungi rejim':'☀️ Kunduzgi rejim');};
+  document.querySelectorAll('#goalSeg .seg-item').forEach(s=>s.onclick=()=>{document.querySelectorAll('#goalSeg .seg-item').forEach(x=>x.classList.remove('active'));s.classList.add('active');State.goalPeriod=s.dataset.gp;moveGoalSegInd();renderGoalsView();});
+  document.querySelectorAll('#dvToggle .dv-toggle-item').forEach(it=>it.onclick=()=>{State.dailyView=it.dataset.dv;renderDaily();});
+  document.getElementById('diaryPrev').onclick=()=>{State.diaryWeekStart=addDays(State.diaryWeekStart||startOfWeek(new Date()),-7);renderDiary();};
+  document.getElementById('diaryNext').onclick=()=>{State.diaryWeekStart=addDays(State.diaryWeekStart||startOfWeek(new Date()),7);renderDiary();};
+  document.getElementById('calPrev').onclick=()=>{State.calMonth=new Date(State.calMonth.getFullYear(),State.calMonth.getMonth()-1,1);renderCalendar();};
+  document.getElementById('calNext').onclick=()=>{State.calMonth=new Date(State.calMonth.getFullYear(),State.calMonth.getMonth()+1,1);renderCalendar();};
+  document.getElementById('weekPrev').onclick=()=>{State.weekOffset--;renderWeekly();};
+  document.getElementById('weekNext').onclick=()=>{State.weekOffset++;renderWeekly();};
+  document.getElementById('mCancel').onclick=closeModal;document.getElementById('mSave').onclick=saveModal;
+  document.getElementById('modalBack').onclick=e=>{if(e.target.id==='modalBack')closeModal();};
+  document.getElementById('pCancel').onclick=closePlanModal;document.getElementById('pSave').onclick=savePlanModal;
+  document.getElementById('planModalBack').onclick=e=>{if(e.target.id==='planModalBack')closePlanModal();};
+  document.getElementById('dayModalBack').onclick=e=>{if(e.target.id==='dayModalBack')document.getElementById('dayModalBack').classList.remove('show');};
+  document.getElementById('darkToggle').onclick=()=>{State.mode=State.mode==='dark'?'light':'dark';localStorage.setItem('iz_mode',State.mode);applyMode();toast(State.mode==='dark'?'🌙 Tungi rejim':'☀️ Kunduzgi rejim');};
+  document.getElementById('notifToggle').onclick=e=>e.currentTarget.classList.toggle('on');
+  document.getElementById('animToggle').onclick=e=>e.currentTarget.classList.toggle('on');
+  updateFabVisibility();
+  loadPlansAPI().then(()=>{loadGoalsAPI();loadSnapshot();loadQuest();});
+
+  // ── AI page wiring ─────────────────────────────────────────────────
+  document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#moodRow .mood-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');State.checkinMood=p.dataset.mood;saveCheckin({mood:State.checkinMood});});
+  document.querySelectorAll('#energyRow .energy-cell').forEach(c=>c.onclick=()=>{document.querySelectorAll('#energyRow .energy-cell').forEach(x=>x.classList.remove('active'));c.classList.add('active');State.checkinEnergy=+c.dataset.en;saveCheckin({energy:State.checkinEnergy});});
+  document.getElementById('intentSave').onclick=async()=>{const v=document.getElementById('intentTxt').value.trim();if(!v)return;await saveCheckin({intent:v});document.getElementById('intentSavedInfo').textContent='✓ Saqlandi';toast('🎯 Niyat saqlandi');};
+  document.getElementById('reflectSave').onclick=async()=>{const v=document.getElementById('reflectTxt').value.trim();if(!v)return;await saveCheckin({reflection:v});document.getElementById('reflectSavedInfo').textContent='✓ Saqlandi';toast('🌙 Saqlandi');};
+  document.getElementById('premiumCta').onclick=()=>{toast('💎 Premium tez orada');try{tg?.HapticFeedback?.impactOccurred('light');}catch(_){}};
+  document.getElementById('unlockOk').onclick=()=>document.getElementById('unlockOverlay').classList.remove('show');
+
+  // ── Onboarding ─────────────────────────────────────────────────────
+  const obDone=localStorage.getItem('iz_onboarded');
+  if(!obDone){setTimeout(()=>document.getElementById('onboarding').classList.add('show'),600);}
+  document.querySelectorAll('#onboarding [data-go]').forEach(b=>b.onclick=()=>{const idx=+b.dataset.go;document.querySelectorAll('#onboarding .step').forEach(s=>s.classList.toggle('active',+s.dataset.step===idx));});
+  document.querySelectorAll('#personaOpts .opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('#personaOpts .opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');localStorage.setItem('iz_persona',o.dataset.p);});
+  const _commitOpt=document.getElementById('commitOpt');if(_commitOpt)_commitOpt.onclick=()=>_commitOpt.classList.toggle('sel');
+  document.getElementById('obSkip').onclick=()=>{localStorage.setItem('iz_onboarded','1');document.getElementById('onboarding').classList.remove('show');};
+  document.getElementById('obFinish').onclick=()=>{localStorage.setItem('iz_onboarded','1');document.getElementById('onboarding').classList.remove('show');confetti(60);toast('🚀 Boshlandi!');};
+
+  setTimeout(()=>{try{tg?.ready();}catch(_){}},100);
+});
+window.addEventListener('resize',moveGoalSegInd);
+</script>
+</body>
+</html>
