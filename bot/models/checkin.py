@@ -5,7 +5,7 @@ from database.db import Base
 
 
 class DailyCheckin(Base):
-    """Morning intent + evening reflection — anchors the daily loop."""
+    """Kunlik kayfiyat + energiya (daily loop anchor). Mood/energy faqat."""
     __tablename__ = "daily_checkins"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -14,8 +14,6 @@ class DailyCheckin(Base):
 
     mood = Column(String(20), nullable=True)      # 🔥 / 💪 / 😐 / 😴 / 😞
     energy = Column(Integer, nullable=True)        # 1..5
-    intent = Column(String(300), nullable=True)    # morning intent
-    reflection = Column(String(500), nullable=True)  # evening reflection
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

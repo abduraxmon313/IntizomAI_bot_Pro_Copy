@@ -28,16 +28,12 @@ async def get_session():
 class CheckinIn(BaseModel):
     mood: Optional[str] = None
     energy: Optional[int] = None
-    intent: Optional[str] = None
-    reflection: Optional[str] = None
 
 
 class CheckinOut(BaseModel):
     checkin_date: str
     mood: Optional[str] = None
     energy: Optional[int] = None
-    intent: Optional[str] = None
-    reflection: Optional[str] = None
 
 
 # ─────────────────────────────────────────────────────────────
@@ -88,7 +84,6 @@ async def get_today_checkin(
     return CheckinOut(
         checkin_date=str(row.checkin_date),
         mood=row.mood, energy=row.energy,
-        intent=row.intent, reflection=row.reflection,
     )
 
 
@@ -120,10 +115,6 @@ async def save_checkin(
         row.mood = body.mood
     if body.energy is not None:
         row.energy = body.energy
-    if body.intent is not None:
-        row.intent = body.intent
-    if body.reflection is not None:
-        row.reflection = body.reflection
 
     await session.commit()
     await session.refresh(row)
@@ -131,5 +122,4 @@ async def save_checkin(
     return CheckinOut(
         checkin_date=str(row.checkin_date),
         mood=row.mood, energy=row.energy,
-        intent=row.intent, reflection=row.reflection,
     )

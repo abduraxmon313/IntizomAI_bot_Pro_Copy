@@ -118,15 +118,13 @@ async def _build_context(session: AsyncSession, user) -> str:
     else:
         lines.append("Maqsadlar: hali qo'shilmagan")
 
-    # Bugungi kayfiyat/niyat
+    # Bugungi kayfiyat / energiya
     if checkin:
         cl = []
         if checkin.mood:
             cl.append(f"kayfiyat {checkin.mood}")
         if checkin.energy:
             cl.append(f"energiya {checkin.energy}/5")
-        if checkin.intent:
-            cl.append(f"niyat: {checkin.intent}")
         if cl:
             lines.append("Bugungi holat: " + ", ".join(cl))
 
@@ -161,7 +159,13 @@ async def ai_chat(
             ),
         )
 
-    context_block = await _build_context(session, user)
+    # Kontekst qurish xato bersa ham suhbat to'xtamasligi kerak
+    try:
+        context_block = await _build_context(session, user)
+    except Exception as e:
+        logger.error(f"⚠️ AI kontekst qurishda xato: {type(e).__name__}: {e}", exc_info=True)
+        context_block = "Ma'lumot vaqtincha mavjud emas."
+
     history = [{"role": m.role, "content": m.content} for m in body.messages]
     reply = await chat_with_coach(context_block, history)
 
