@@ -498,6 +498,40 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .chat-send:disabled{opacity:.5;cursor:not-allowed}
 .chat-send svg{width:20px;height:20px}
 
+/* ── 24h time picker ────────────────────────────────────────────────────── */
+.time-pick{display:flex;align-items:center;gap:6px}
+.time-pick select{flex:1;padding:12px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:15px;font-weight:600;color:var(--text);font-family:inherit;text-align:center;text-align-last:center;cursor:pointer;outline:none;transition:border-color .25s,box-shadow .25s;-webkit-appearance:none;appearance:none}
+.time-pick select:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.time-pick .tcolon{font-size:18px;font-weight:800;color:var(--text-2)}
+
+/* ── Home day strip (kun tanlash) ───────────────────────────────────────── */
+.day-strip{display:flex;flex-direction:row-reverse;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.day-strip::-webkit-scrollbar{display:none}
+.day-chip{flex:0 0 auto;scroll-snap-align:end;background:var(--surface);border:1.5px solid var(--border);border-radius:15px;padding:9px 13px;cursor:pointer;text-align:center;transition:all .25s;min-width:58px}
+.day-chip:active{transform:scale(.93)}
+.day-chip.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
+.day-chip .dw{font-size:10.5px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.4px}
+.day-chip .dd{font-size:18px;font-weight:800;line-height:1.05;margin-top:2px}
+.day-chip .dm{font-size:9.5px;opacity:.7;margin-top:1px}
+.day-chip.today .dw{color:inherit}
+.day-chip.has-dot{position:relative}
+.day-chip.has-dot::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--primary)}
+.day-chip.active.has-dot::after{background:#fff}
+
+/* ── Profile subscription status ────────────────────────────────────────── */
+.sub-status{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:14px}
+.sub-status.premium{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 55%,#0f3460 100%);border-color:transparent;box-shadow:0 12px 30px rgba(15,52,96,.35)}
+.sub-status .ss-row{display:flex;align-items:center;gap:12px}
+.sub-status .ss-ic{width:46px;height:46px;border-radius:14px;background:var(--grad-soft);color:var(--primary);display:grid;place-items:center;font-size:24px;flex-shrink:0}
+.sub-status.premium .ss-ic{background:linear-gradient(135deg,#f5d76e,#d4a017);color:#1a1a2e;box-shadow:0 6px 16px rgba(245,215,110,.4)}
+.sub-status .ss-body{flex:1;min-width:0}
+.sub-status .ss-ttl{font-size:14.5px;font-weight:800}
+.sub-status.premium .ss-ttl{color:#fff}
+.sub-status .ss-sub{font-size:12px;color:var(--text-2);margin-top:2px;line-height:1.4}
+.sub-status.premium .ss-sub{color:rgba(255,255,255,.78)}
+.sub-status .ss-cta{background:var(--grad);color:#fff;border:none;padding:10px 14px;border-radius:12px;font-weight:700;font-size:12.5px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;white-space:nowrap}
+.sub-status .ss-cta:active{transform:scale(.96)}
+
 </style>
 </head>
 <body>
@@ -541,7 +575,8 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 </div>
 
 <div class="mini-stats"><div class="mini-stat"><div class="ic">📋</div><div class="v" id="msPlans">0</div><div class="l">Rejalar</div></div><div class="mini-stat"><div class="ic">🎯</div><div class="v" id="msGoals">0</div><div class="l">Maqsadlar</div></div><div class="mini-stat"><div class="ic">⭐</div><div class="v" id="msScore">0</div><div class="l">Jami ball</div></div></div>
-<div class="section-title"><h2>Bugungi rejalar</h2></div>
+<div class="section-title"><h2 id="homePlansTitle">Bugungi rejalar</h2></div>
+<div class="day-strip" id="dayStrip"></div>
 <button class="add-btn ripple" id="addPlanBtn" type="button" aria-label="Reja qo'shish"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Reja qo'shish</span></button>
 <div id="plansList"></div>
 </section>
@@ -633,34 +668,8 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
   <div class="energy-cell" data-en="5">5</div>
 </div>
 
-<div class="intent-card">
-  <label>🌅 Bugungi niyatim</label>
-  <textarea id="intentTxt" placeholder="Bugun nimaga e'tibor qarataman?"></textarea>
-  <div class="save"><span class="info" id="intentSavedInfo"></span><button id="intentSave">Saqlash</button></div>
-</div>
-
-<div class="intent-card">
-  <label>🌙 Kun yakuni</label>
-  <textarea id="reflectTxt" placeholder="Bugun nima yaxshi ketdi? Nimani o'zgartirishim mumkin?"></textarea>
-  <div class="save"><span class="info" id="reflectSavedInfo"></span><button id="reflectSave">Saqlash</button></div>
-</div>
-
 <div class="section-title"><h2>Smart insights 🧠</h2></div>
 <div id="insights"></div>
-
-<div class="premium locked-card" id="premiumCard">
-  <div class="top"><span class="crown">👑</span><span class="ttl">Intizom AI Pro</span></div>
-  <div class="sub">Cheksiz maqsadlar, AI coach, streak protection va boshqa premium imkoniyatlar.</div>
-  <div class="feats">
-    <div>Cheksiz reja</div>
-    <div>AI Coach +</div>
-    <div>Streak Freeze</div>
-    <div>Chuqur tahlil</div>
-    <div>Elite badges</div>
-    <div>Premium temalar</div>
-  </div>
-  <button class="cta" id="premiumCta">✨ Premium ochish</button>
-</div>
 
 </section>
 
@@ -687,6 +696,17 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 <section class="page" data-page="profile">
 <div class="hdr"><div class="hdr-greet"><h1>Profil 👤</h1><p>Sozlamalar</p></div></div>
 <div class="prof-hero"><div class="av" id="profAv">A</div><div class="nm" id="profName">Foydalanuvchi</div><div class="un" id="profUn">@username</div><div class="stx"><div class="it"><div class="v" id="pfStreak">0</div><div class="l">Streak</div></div><div class="it"><div class="v" id="pfScore">0</div><div class="l">Ball</div></div><div class="it"><div class="v" id="pfDone">0</div><div class="l">Bajarilgan</div></div></div></div>
+
+<div class="sub-status" id="subStatus">
+  <div class="ss-row">
+    <div class="ss-ic" id="ssIcon">💎</div>
+    <div class="ss-body">
+      <div class="ss-ttl" id="ssTitle">Obuna holati</div>
+      <div class="ss-sub" id="ssSub">Yuklanmoqda…</div>
+    </div>
+    <button class="ss-cta" id="ssCta" style="display:none">Obuna olish</button>
+  </div>
+</div>
 <div class="section-title"><h2>🎨 Tema</h2></div>
 <div class="theme-grid" id="themeGrid"></div>
 <div class="section-title"><h2>Rejim</h2></div>
@@ -774,7 +794,7 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 <div class="modal-back" id="planModalBack"><div class="modal"><div class="grab"></div><h3 id="planModalTitle">Yangi reja</h3>
 <div class="fld"><label>Sarlavha</label><input id="pTitle" placeholder="Masalan: Ertalabki yugurish"></div>
 <div class="fld"><label>Tavsif (ixtiyoriy)</label><textarea id="pDesc" placeholder="Qisqacha izoh..."></textarea></div>
-<div class="row gap-12"><div class="fld" style="flex:1"><label>Eslatma vaqti</label><input id="pTime" type="time" value="08:00"></div><div class="fld" style="flex:1"><label>Sana</label><input id="pDate" type="date"></div></div>
+<div class="row gap-12"><div class="fld" style="flex:1"><label>Eslatma vaqti</label><div class="time-pick"><select id="pHour" aria-label="Soat"></select><span class="tcolon">:</span><select id="pMin" aria-label="Daqiqa"></select></div></div><div class="fld" style="flex:1"><label>Sana</label><input id="pDate" type="date"></div></div>
 <div class="row gap-12 mt-8"><button class="btn btn-ghost" id="pCancel">Bekor</button><button class="btn" id="pSave">Saqlash</button></div></div></div>
 
 <div class="modal-back" id="dayModalBack"><div class="modal"><div class="grab"></div><h3 id="dayModalTitle">Kun maqsadlari</h3><div id="dayModalList"></div><div class="row gap-12 mt-8"><button class="btn btn-ghost" id="dayClose">Yopish</button><button class="btn" id="dayAdd">+ Qo'shish</button></div></div></div>
@@ -807,7 +827,49 @@ document.getElementById('userName').textContent=nm;document.getElementById('prof
 
 async function api(path,opts={}){const url=API+path+(path.includes('?')?'&':'?')+'telegram_id='+State.telegramId;const res=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});if(!res.ok)throw new Error('API '+res.status);return res.json();}
 
-async function loadPlansAPI(){try{const d=await api('/api/webapp/plans');State.plans=d.plans||[];if(d.user){State.user={...State.user,...d.user};document.getElementById('streakCount').textContent=d.user.streak||0;document.getElementById('msScore').textContent=d.user.total_score||0;document.getElementById('stStreak').textContent=d.user.streak||0;document.getElementById('stTotal').textContent=d.user.total_score||0;document.getElementById('pfStreak').textContent=d.user.streak||0;document.getElementById('pfScore').textContent=d.user.total_score||0;}document.getElementById('msPlans').textContent=State.plans.length;renderPlans();renderHero();}catch(e){console.warn('plans',e);State.plans=[];renderPlans();}}async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}document.getElementById('msGoals').textContent=State.goals.length;document.getElementById('stGoals').textContent=State.goals.filter(g=>!g.completed).length;const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;document.getElementById('stDone').textContent=done;document.getElementById('pfDone').textContent=done;renderGoalsView();}
+async function loadPlansAPI(){try{const d=await api('/api/webapp/plans');State.plans=d.plans||[];if(d.user){State.user={...State.user,...d.user};setText('streakCount',d.user.streak||0);setText('msScore',d.user.total_score||0);setText('stStreak',d.user.streak||0);setText('stTotal',d.user.total_score||0);setText('pfStreak',d.user.streak||0);setText('pfScore',d.user.total_score||0);}setText('msPlans',State.plans.length);renderDayStrip();renderPlans();renderHero();updateHomePlansTitle();}catch(e){console.warn('plans',e);State.plans=[];renderPlans();}}
+
+// Tanlangan kun uchun rejalarni yuklash (bugun yoki o'tgan/kelajak kun)
+function isSameDay(ymdStr,dateObj){try{return ymdStr===ymd(dateObj||new Date());}catch(_){return false;}}
+async function loadPlansForSelectedDay(){
+  const day=ymd(State.selectedDate||new Date());
+  try{
+    const d=await api('/api/webapp/plans?date_from='+day+'&date_to='+day);
+    State.plans=d.plans||[];
+  }catch(e){console.warn('day plans',e);State.plans=[];}
+  setText('msPlans',State.plans.length);
+  renderDayStrip();renderPlans();updateHomePlansTitle();
+}
+function updateHomePlansTitle(){
+  const sel=State.selectedDate||new Date();
+  const todayStr=ymd(new Date());
+  const selStr=ymd(sel);
+  let label;
+  if(selStr===todayStr)label='Bugungi rejalar';
+  else if(selStr===ymd(addDays(new Date(),1)))label='Ertangi rejalar';
+  else if(selStr===ymd(addDays(new Date(),-1)))label='Kechagi rejalar';
+  else label=sel.getDate()+' '+UZ_MONTHS_SHORT[sel.getMonth()]+' rejalari';
+  setText('homePlansTitle',label);
+}
+function renderDayStrip(){
+  const strip=document.getElementById('dayStrip');if(!strip)return;
+  const sel=ymd(State.selectedDate||new Date());
+  const todayStr=ymd(new Date());
+  // -14 kundan +3 kungacha (o'tgan tarix + bir nechta kelajak kun)
+  let html='';
+  for(let off=3;off>=-14;off--){
+    const d=addDays(new Date(),off);
+    const k=ymd(d);
+    const isToday=k===todayStr;
+    const isSel=k===sel;
+    const dw=UZ_DOW_SHORT[(d.getDay()+6)%7];
+    html+=`<div class="day-chip ${isSel?'active':''} ${isToday?'today':''}" data-day="${k}"><div class="dw">${isToday?'Bugun':dw}</div><div class="dd">${d.getDate()}</div><div class="dm">${UZ_MONTHS_SHORT[d.getMonth()]}</div></div>`;
+  }
+  strip.innerHTML=html;
+  strip.querySelectorAll('.day-chip').forEach(c=>c.onclick=()=>{State.selectedDate=new Date(c.dataset.day+'T00:00:00');loadPlansForSelectedDay();});
+  // tanlangan chipni ko'rinishga keltirish
+  const act=strip.querySelector('.day-chip.active');if(act)act.scrollIntoView({inline:'center',block:'nearest'});
+}async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}document.getElementById('msGoals').textContent=State.goals.length;document.getElementById('stGoals').textContent=State.goals.filter(g=>!g.completed).length;const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;document.getElementById('stDone').textContent=done;document.getElementById('pfDone').textContent=done;renderGoalsView();}
 
 async function loadPlansRange(){try{const tod=new Date();const df=ymd(addDays(tod,-29));const dt=ymd(tod);const d=await api('/api/webapp/plans?date_from='+df+'&date_to='+dt);State.plansRange=d.plans||[];}catch(e){console.warn('range',e);State.plansRange=State.plans;}}
 
@@ -886,7 +948,7 @@ async function chatSend(text){
   }
 }
 
-async function loadCheckin(){try{const c=await api('/api/webapp/checkin');if(!c)return;if(c.mood){document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===c.mood));State.checkinMood=c.mood;}if(c.energy){document.querySelectorAll('#energyRow .energy-cell').forEach(p=>p.classList.toggle('active',+p.dataset.en===c.energy));State.checkinEnergy=c.energy;}if(c.intent){document.getElementById('intentTxt').value=c.intent;document.getElementById('intentSavedInfo').textContent='✓ Saqlangan';}if(c.reflection){document.getElementById('reflectTxt').value=c.reflection;document.getElementById('reflectSavedInfo').textContent='✓ Saqlangan';}}catch(e){console.warn('checkin',e);}}
+async function loadCheckin(){try{const c=await api('/api/webapp/checkin');if(!c)return;if(c.mood){document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===c.mood));State.checkinMood=c.mood;}if(c.energy){document.querySelectorAll('#energyRow .energy-cell').forEach(p=>p.classList.toggle('active',+p.dataset.en===c.energy));State.checkinEnergy=c.energy;}}catch(e){console.warn('checkin',e);}}
 
 async function saveCheckin(payload){try{await api('/api/webapp/checkin',{method:'POST',body:JSON.stringify(payload)});}catch(_){toast('Saqlashda xato',true);}}
 
@@ -894,7 +956,29 @@ async function saveCheckin(payload){try{await api('/api/webapp/checkin',{method:
 function openPaywall(){const ov=document.getElementById('paywall');if(ov){ov.classList.add('show');try{tg?.HapticFeedback?.notificationOccurred?.('warning');}catch(_){}}}
 function closePaywall(){const ov=document.getElementById('paywall');if(ov)ov.classList.remove('show');}
 function renderPaywallPlans(plans){const el=document.getElementById('pwPlans');if(!el)return;if(!plans||!plans.length){el.innerHTML='';return;}el.innerHTML=plans.map(p=>`<div class="pw-plan"><span class="pn">💎 ${esc(p.title)}</span><span class="pp">${esc(p.price_label)} so'm</span></div>`).join('');}
-function applyPremiumUI(s){const card=document.getElementById('premiumCard');const cta=document.getElementById('premiumCta');if(s&&s.is_premium){if(card)card.classList.remove('locked-card');if(cta)cta.textContent='✅ Premium faol — '+(s.days_left||0)+' kun';}else{if(card)card.classList.add('locked-card');if(cta)cta.textContent='💎 Premium ochish';}}
+function applyPremiumUI(s){
+  const box=document.getElementById('subStatus');
+  const icon=document.getElementById('ssIcon');
+  const title=document.getElementById('ssTitle');
+  const sub=document.getElementById('ssSub');
+  const cta=document.getElementById('ssCta');
+  if(!box)return;
+  if(s&&s.is_premium){
+    box.classList.add('premium');
+    if(icon)icon.textContent='👑';
+    if(title)title.textContent='Premium faol';
+    let until='';
+    if(s.premium_until){try{const d=new Date(s.premium_until);until=' • '+d.getDate()+' '+UZ_MONTHS_SHORT[d.getMonth()]+' '+d.getFullYear()+' gacha';}catch(_){}}
+    if(sub)sub.textContent=(s.plan_title?s.plan_title:'Obuna')+' • '+(s.days_left||0)+' kun qoldi'+until;
+    if(cta)cta.style.display='none';
+  }else{
+    box.classList.remove('premium');
+    if(icon)icon.textContent='🆓';
+    if(title)title.textContent='Bepul rejim';
+    if(sub)sub.textContent='Mini App imkoniyatlari cheklangan. Premium bilan to\'liq foydalaning.';
+    if(cta){cta.style.display='';cta.textContent='💎 Obuna olish';}
+  }
+}
 async function loadSubscription(){
   try{
     const s=await api('/api/webapp/subscription');
@@ -986,6 +1070,7 @@ function renderThemes(){const g=document.getElementById('themeGrid');g.innerHTML
 function applyMode(){document.documentElement.setAttribute('data-mode',State.mode);document.getElementById('darkToggle').classList.toggle('on',State.mode==='dark');document.getElementById('modeIcon').textContent=State.mode==='dark'?'🌙':'☀️';}
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const setText=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
 const emptyState=(ic,t,p)=>`<div class="empty-state"><div class="ico">${ic}</div><h4>${esc(t)}</h4><p>${esc(p)}</p></div>`;
 function toast(msg,danger){const el=document.getElementById('toast');el.textContent=msg;el.style.background=danger?'var(--danger)':'';el.style.color=danger?'#fff':'';el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2000);}
 
@@ -993,15 +1078,56 @@ function openModal(period,periodKey,goal){State.modal={period,periodKey,id:goal?
 function closeModal(){document.getElementById('modalBack').classList.remove('show');}
 async function saveModal(){const t=document.getElementById('mTitle').value.trim();if(!t){toast('Sarlavha bo\'sh',true);return;}const d=document.getElementById('mDesc').value.trim();try{if(State.modal.id){const ng=await apiGoalUpdate(State.modal.id,{title:t,description:d||null});const idx=State.goals.findIndex(g=>g.id===State.modal.id);if(idx>=0)State.goals[idx]={...State.goals[idx],...ng};toast('✓ Yangilandi');}else{const pl={title:t,description:d||null,goal_type:State.modal.period,period:State.modal.periodKey};const ng=await apiGoalCreate(pl);State.goals.push(ng);toast('✨ Maqsad qo\'shildi');}closeModal();renderGoalsView();document.getElementById('msGoals').textContent=State.goals.length;}catch(e){toast('Xato: '+e.message,true);}}
 
-function openPlanModal(plan){State.planModal={id:plan?plan.id:null};document.getElementById('planModalTitle').textContent=plan?'Rejani tahrirlash':'Yangi reja';document.getElementById('pTitle').value=plan?.title||'';document.getElementById('pDesc').value=plan?.description||'';document.getElementById('pTime').value=plan?.scheduled_time||'08:00';document.getElementById('pDate').value=(plan&&plan.plan_date)||ymd(new Date());document.getElementById('planModalBack').classList.add('show');setTimeout(()=>document.getElementById('pTitle').focus(),300);}
-function closePlanModal(){document.getElementById('planModalBack').classList.remove('show');}
-async function savePlanModal(){const t=document.getElementById('pTitle').value.trim();if(!t){toast('Sarlavha bo\'sh',true);return;}const desc=document.getElementById('pDesc').value.trim();const tm=document.getElementById('pTime').value||null;const dt=document.getElementById('pDate').value||ymd(new Date());const body={title:t,description:desc||null,scheduled_time:tm,plan_date:dt};try{if(State.planModal.id){const np=await apiPlanUpdate(State.planModal.id,body);const idx=State.plans.findIndex(x=>x.id===State.planModal.id);if(idx>=0)State.plans[idx]=np;toast('✓ Yangilandi');}else{const np=await apiPlanCreate(body);State.plans.unshift(np);toast('✨ Reja qo\'shildi');}closePlanModal();document.getElementById('msPlans').textContent=State.plans.length;renderPlans();renderHero();}catch(e){toast('Xato: '+e.message,true);}}
+function fillTimeSelects(){
+  const h=document.getElementById('pHour');const m=document.getElementById('pMin');
+  if(h&&!h.options.length){let o='<option value="">—</option>';for(let i=0;i<24;i++)o+='<option value="'+pad(i)+'">'+pad(i)+'</option>';h.innerHTML=o;}
+  if(m&&!m.options.length){let o='';for(let i=0;i<60;i+=5)o+='<option value="'+pad(i)+'">'+pad(i)+'</option>';m.innerHTML=o;}
+}
+function openPlanModal(plan){
+  State.planModal={id:plan?plan.id:null};
+  fillTimeSelects();
+  setText('planModalTitle',plan?'Rejani tahrirlash':'Yangi reja');
+  const elT=document.getElementById('pTitle');if(elT)elT.value=plan?.title||'';
+  const elD=document.getElementById('pDesc');if(elD)elD.value=plan?.description||'';
+  // Vaqtni 24h tanlagichga joylash
+  let hh='',mm='00';
+  if(plan&&plan.scheduled_time&&plan.scheduled_time.includes(':')){const pp=plan.scheduled_time.split(':');hh=pad(parseInt(pp[0],10)||0);const mi=parseInt(pp[1],10)||0;mm=pad(Math.round(mi/5)*5%60);}
+  const hSel=document.getElementById('pHour');if(hSel)hSel.value=hh;
+  const mSel=document.getElementById('pMin');if(mSel)mSel.value=mm;
+  // Sana: tahrirda reja sanasi, yangi rejada tanlangan kun
+  const dEl=document.getElementById('pDate');
+  if(dEl)dEl.value=(plan&&plan.plan_date)||ymd(State.selectedDate||new Date());
+  const back=document.getElementById('planModalBack');if(back)back.classList.add('show');
+  setTimeout(()=>{const f=document.getElementById('pTitle');if(f)f.focus();},300);
+}
+function closePlanModal(){const b=document.getElementById('planModalBack');if(b)b.classList.remove('show');}
+async function savePlanModal(){
+  const t=(document.getElementById('pTitle')?.value||'').trim();
+  if(!t){toast('Sarlavha bo\'sh',true);return;}
+  const desc=(document.getElementById('pDesc')?.value||'').trim();
+  const hh=document.getElementById('pHour')?.value||'';
+  const mm=document.getElementById('pMin')?.value||'00';
+  const tm=hh?(hh+':'+mm):null;
+  const dt=document.getElementById('pDate')?.value||ymd(State.selectedDate||new Date());
+  const body={title:t,description:desc||null,scheduled_time:tm,plan_date:dt};
+  try{
+    if(State.planModal.id){const np=await apiPlanUpdate(State.planModal.id,body);const idx=State.plans.findIndex(x=>x.id===State.planModal.id);if(idx>=0)State.plans[idx]=np;toast('✓ Yangilandi');}
+    else{const np=await apiPlanCreate(body);if(isSameDay(dt,State.selectedDate))State.plans.unshift(np);toast('✨ Reja qo\'shildi');}
+    closePlanModal();
+    await loadPlansForSelectedDay();
+    renderHero();
+  }catch(e){
+    const msg=String(e&&e.message||'');
+    if(msg.includes('402')){closePlanModal();toast('💎 Bepul kunlik limit tugadi');openPaywall();}
+    else toast('Xato: '+msg,true);
+  }
+}
 
 function fabAction(){const ap=document.querySelector('.page.active').dataset.page;if(ap==='home'){openPlanModal(null);return;}if(ap==='goals'){let pk;if(State.goalPeriod==='yearly')pk=String(State.selectedYear);else if(State.goalPeriod==='monthly')pk=State.selectedYear+'-'+pad(State.selectedMonth+1);else if(State.goalPeriod==='weekly')pk=weekKey(addDays(new Date(),State.weekOffset*7));else pk=ymd(State.selectedDate);openModal(State.goalPeriod,pk);return;}}
 
 function updateFabVisibility(){/* inline add buttons now live inside sections */}
 
-function switchPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===n));document.querySelectorAll('.nav-item, .nav-ai').forEach(x=>x.classList.toggle('active',x.dataset.nav===n));if(n==='stats')renderStats();if(n==='goals'){renderGoalsView();requestAnimationFrame(moveGoalSegInd);}if(n==='ai'){loadCoach();loadCheckin();chatGreet();loadPlansRange().then(()=>renderInsights());}if(n==='home'){loadSnapshot();loadQuest();}updateFabVisibility();if(navigator.vibrate)navigator.vibrate(10);}
+function switchPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===n));document.querySelectorAll('.nav-item, .nav-ai').forEach(x=>x.classList.toggle('active',x.dataset.nav===n));if(n==='stats')renderStats();if(n==='goals'){renderGoalsView();requestAnimationFrame(moveGoalSegInd);}if(n==='ai'){loadCoach();loadCheckin();chatGreet();loadPlansRange().then(()=>renderInsights());}if(n==='home'){loadSnapshot();loadQuest();renderDayStrip();updateHomePlansTitle();}updateFabVisibility();if(navigator.vibrate)navigator.vibrate(10);}
 
 function ripple(e){const t=e.currentTarget;const r=t.getBoundingClientRect();const ink=document.createElement('span');ink.className='ripple-ink';const sz=Math.max(r.width,r.height);ink.style.width=ink.style.height=sz+'px';ink.style.left=(e.clientX-r.left-sz/2)+'px';ink.style.top=(e.clientY-r.top-sz/2)+'px';t.appendChild(ink);setTimeout(()=>ink.remove(),600);}
 
@@ -1039,9 +1165,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.querySelectorAll('#chatSugg .s').forEach(s=>s.onclick=()=>chatSend(s.dataset.q));
   document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#moodRow .mood-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');State.checkinMood=p.dataset.mood;saveCheckin({mood:State.checkinMood});});
   document.querySelectorAll('#energyRow .energy-cell').forEach(c=>c.onclick=()=>{document.querySelectorAll('#energyRow .energy-cell').forEach(x=>x.classList.remove('active'));c.classList.add('active');State.checkinEnergy=+c.dataset.en;saveCheckin({energy:State.checkinEnergy});});
-  document.getElementById('intentSave').onclick=async()=>{const v=document.getElementById('intentTxt').value.trim();if(!v)return;await saveCheckin({intent:v});document.getElementById('intentSavedInfo').textContent='✓ Saqlandi';toast('🎯 Niyat saqlandi');};
-  document.getElementById('reflectSave').onclick=async()=>{const v=document.getElementById('reflectTxt').value.trim();if(!v)return;await saveCheckin({reflection:v});document.getElementById('reflectSavedInfo').textContent='✓ Saqlandi';toast('🌙 Saqlandi');};
-  document.getElementById('premiumCta').onclick=()=>{if(State.sub&&State.sub.is_premium){toast('✅ Premium allaqachon faol');return;}openPaywall();try{tg?.HapticFeedback?.impactOccurred('light');}catch(_){}};
+  const _ssCta=document.getElementById('ssCta');if(_ssCta)_ssCta.onclick=()=>{openPaywall();try{tg?.HapticFeedback?.impactOccurred('light');}catch(_){}};
   const _pwCta=document.getElementById('pwCta');if(_pwCta)_pwCta.onclick=()=>{try{tg?.HapticFeedback?.impactOccurred('medium');}catch(_){}try{tg?.close();}catch(_){toast('Botga qaytib «💎 Obuna» tugmasini bosing');}};
   document.getElementById('unlockOk').onclick=()=>document.getElementById('unlockOverlay').classList.remove('show');
 

@@ -315,6 +315,12 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
     AI Coach bilan suhbat. `history` — [{role, content}, ...] (ephemeral,
     saqlanmaydi). `context_block` — foydalanuvchining maqsad/reja/statistikasi.
     """
+    if not OPENAI_API_KEY:
+        logger.error("❌ OPENAI_API_KEY topilmadi (bo'sh). .env da OPENAI_API_KEY ni tekshiring.")
+        return (
+            "⚙️ AI hozircha sozlanmagan (API kalit topilmadi). "
+            "Administrator bilan bog'laning."
+        )
     try:
         messages = [
             {"role": "system", "content": COACH_PERSONA},
@@ -346,7 +352,10 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         return reply or "Hmm, hozir javob topa olmadim. Yana bir bor yozib ko'rasanmi?"
 
     except Exception as e:
-        logger.error(f"❌ AI Coach chat xatosi: {type(e).__name__}: {e}")
+        # Aniq sababni log'ga yozamiz (deploy debug uchun)
+        logger.error(
+            f"❌ AI Coach chat xatosi: {type(e).__name__}: {e}", exc_info=True
+        )
         return (
             "⚠️ Hozir AI bilan bog'lanishda kichik nosozlik bo'ldi. "
             "Bir oz kutib, qaytadan urinib ko'r."

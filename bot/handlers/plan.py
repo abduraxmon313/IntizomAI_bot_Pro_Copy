@@ -332,6 +332,11 @@ async def confirm_plans_handler(callback: CallbackQuery, state: FSMContext, sess
         await callback.answer("Bepul limit tugadi", show_alert=True)
         return
 
+    # Bot orqali qo'shilgan rejalar HAR DOIM bugun uchun saqlanadi.
+    # (Ertaga/boshqa kun uchun reja faqat WebApp orqali sana tanlab qo'shiladi.)
+    for p in plans_data:
+        p["for_tomorrow"] = False
+
     await create_plans(session, user, plans_data)
     await state.clear()
 
