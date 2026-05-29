@@ -332,28 +332,31 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         if not convo:
             return "Salom! Men Intizom AI murabbiyingman 🌱 Bugun nima ustida ishlaymiz?"
 
-        context_msg = {
-            "role": "system",
-            "content": (
-                "═══ FOYDALANUVCHI MA'LUMOTLARI (REAL, JONLI DB'DAN) ═══\n"
-                "Quyida foydalanuvchining HOZIRGI haqiqiy holati — maqsadlari, oxirgi 7 kunlik "
-                "rejalari va kayfiyati. Bu ma'lumotni sen TO'LIQ ko'rib turibsan. "
-                "Pastdagi savolga AYNAN shu ma'lumotga asoslanib, psixolog kabi tahlil qilib, "
-                "aniq nom va raqamlar bilan javob ber. \"Ma'lumot yo'q\" deyish QAT'IY TAQIQLANADI:\n\n"
-                + context_block +
-                "\n═══════════════════════════════════════════════"
-            ),
-        }
+        # Oxirgi foydalanuvchi savolini topamiz
+        last_user_idx = None
+        for i in range(len(convo) - 1, -1, -1):
+            if convo[i]["role"] == "user":
+                last_user_idx = i
+                break
 
-        # Persona — eng boshida. Kontekst — oxirgi user xabaridan OLDIN (recency = kuchli e'tibor).
+        # Kontekstni AYNAN oxirgi savolning ICHIGA joylashtiramiz — model uni
+        # e'tiborsiz qoldira olmaydi (savolning o'zi bilan birga keladi).
+        if last_user_idx is not None:
+            user_question = convo[last_user_idx]["content"]
+            convo[last_user_idx] = {
+                "role": "user",
+                "content": (
+                    "[MENING JONLI MA'LUMOTLARIM — bazadan olingan, shu asosda javob ber:]\n"
+                    + context_block +
+                    "\n\n[MENING SAVOLIM:]\n" + user_question +
+                    "\n\n(Eslatma: yuqoridagi ma'lumotlar — mening haqiqiy maqsad, reja va "
+                    "kayfiyatim. Shularga tayanib, aniq nom va raqamlar bilan javob ber. "
+                    "'Ma'lumot yo'q' DEMA.)"
+                ),
+            }
+
         messages = [{"role": "system", "content": COACH_PERSONA}]
-        if len(convo) == 1:
-            messages.append(context_msg)
-            messages.extend(convo)
-        else:
-            messages.extend(convo[:-1])
-            messages.append(context_msg)
-            messages.append(convo[-1])
+        messages.extend(convo)
 
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
