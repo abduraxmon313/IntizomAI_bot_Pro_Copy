@@ -461,9 +461,8 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 @keyframes checkPop{0%{transform:scale(0) rotate(-180deg)}60%{transform:scale(1.3) rotate(10deg)}100%{transform:scale(1) rotate(0)}}
 .plan .cbx.done{animation:checkPop .55s cubic-bezier(.34,1.56,.64,1)}
 
-/* ── Paywall (premium gate) ─────────────────────────────────────────────── */
 /* ── Paywall (premium gate) — zamonaviy, animatsiyali ───────────────────── */
-.paywall{position:fixed;inset:0;z-index:600;background:var(--bg);color:var(--text);display:none;flex-direction:column;justify-content:center;padding:26px 20px calc(26px + env(safe-area-inset-bottom));overflow-y:auto}
+.paywall{position:fixed;inset:0;z-index:600;background:var(--bg);color:var(--text);display:none;flex-direction:column;justify-content:flex-start;padding:20px 18px calc(24px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .paywall.show{display:flex;animation:pwFade .4s ease}
 @keyframes pwFade{from{opacity:0}to{opacity:1}}
 /* fon orblar */
@@ -473,25 +472,25 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .pw-orbs span:nth-child(2){width:260px;height:260px;bottom:-80px;left:-100px;opacity:.35;animation:pwFloat 18s ease-in-out infinite reverse}
 .pw-orbs span:nth-child(3){width:180px;height:180px;top:40%;left:55%;opacity:.25;animation:pwFloat 12s ease-in-out infinite}
 @keyframes pwFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(24px,-30px) scale(1.12)}}
-.pw-inner{position:relative;z-index:1;max-width:380px;width:100%;margin:0 auto;display:flex;flex-direction:column;align-items:stretch}
-.pw-crown{font-size:60px;text-align:center;margin:0 0 6px;filter:drop-shadow(0 8px 22px var(--primary-soft));animation:pwCrown 3s ease-in-out infinite}
+.pw-inner{position:relative;z-index:1;max-width:380px;width:100%;margin:auto;display:flex;flex-direction:column;align-items:stretch}
+.pw-crown{font-size:50px;text-align:center;margin:0 0 4px;filter:drop-shadow(0 8px 22px var(--primary-soft));animation:pwCrown 3s ease-in-out infinite}
 @keyframes pwCrown{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-7px) rotate(5deg)}}
-.paywall h1{font-size:27px;font-weight:900;text-align:center;letter-spacing:-.5px}
+.paywall h1{font-size:24px;font-weight:900;text-align:center;letter-spacing:-.5px}
 .pw-pro{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:900}
-.paywall .pw-sub{font-size:14px;line-height:1.55;text-align:center;color:var(--text-2);margin:10px auto 18px;max-width:340px}
-.paywall .pw-feats{display:grid;gap:9px;width:100%;margin:0 auto 16px}
-.paywall .pw-feat{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow-sm);animation:pwSlide .5s cubic-bezier(.22,1,.36,1) both}
+.paywall .pw-sub{font-size:13px;line-height:1.5;text-align:center;color:var(--text-2);margin:8px auto 14px;max-width:340px}
+.paywall .pw-feats{display:grid;gap:7px;width:100%;margin:0 auto 12px}
+.paywall .pw-feat{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:10px 13px;font-size:13px;font-weight:600;box-shadow:var(--shadow-sm);animation:pwSlide .5s cubic-bezier(.22,1,.36,1) both}
 .paywall .pw-feat:nth-child(1){animation-delay:.05s}.paywall .pw-feat:nth-child(2){animation-delay:.12s}.paywall .pw-feat:nth-child(3){animation-delay:.19s}.paywall .pw-feat:nth-child(4){animation-delay:.26s}.paywall .pw-feat:nth-child(5){animation-delay:.33s}
 @keyframes pwSlide{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
-.paywall .pw-feat .fic{font-size:18px;flex-shrink:0;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--grad-soft)}
-.paywall .pw-plans{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin:0 auto 14px}
-.paywall .pw-plan{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 10px;transition:transform .2s,border-color .2s}
+.paywall .pw-feat .fic{font-size:17px;flex-shrink:0;width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--grad-soft)}
+.paywall .pw-plans{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;margin:0 auto 12px}
+.paywall .pw-plan{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:9px 4px;transition:transform .2s,border-color .2s}
 .paywall .pw-plan:active{transform:scale(.96)}
-.paywall .pw-plan .pn{font-size:12.5px;font-weight:700;color:var(--text)}
-.paywall .pw-plan .pp{font-size:13.5px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.paywall .pw-note{font-size:12.5px;text-align:center;color:var(--text-2);width:100%;margin:0 auto 16px;line-height:1.55}
+.paywall .pw-plan .pn{font-size:11px;font-weight:700;color:var(--text);text-align:center}
+.paywall .pw-plan .pp{font-size:11px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center}
+.paywall .pw-note{font-size:12px;text-align:center;color:var(--text-2);width:100%;margin:0 auto 12px;line-height:1.5}
 .paywall .pw-note code{background:var(--primary-soft);color:var(--primary);padding:2px 8px;border-radius:6px;font-weight:800}
-.paywall .pw-cta{position:relative;overflow:hidden;display:block;width:100%;margin:0 auto;background:var(--grad);color:#fff;text-align:center;padding:16px;border-radius:16px;font-weight:800;font-size:15px;border:none;cursor:pointer;box-shadow:var(--glow);animation:pwGlow 3s ease-in-out infinite}
+.paywall .pw-cta{position:relative;overflow:hidden;display:block;width:100%;margin:0 auto;background:var(--grad);color:#fff;text-align:center;padding:15px;border-radius:16px;font-weight:800;font-size:15px;border:none;cursor:pointer;box-shadow:var(--glow);animation:pwGlow 3s ease-in-out infinite}
 @keyframes pwGlow{0%,100%{box-shadow:var(--glow)}50%{box-shadow:0 14px 38px var(--primary-soft),0 0 0 4px var(--primary-soft)}}
 .paywall .pw-cta::after{content:'';position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(120deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:pwShine 3.2s ease-in-out infinite}
 @keyframes pwShine{0%{left:-60%}55%,100%{left:130%}}
@@ -521,7 +520,7 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .chat-sugg .s{font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--border);border-radius:999px;padding:7px 12px;cursor:pointer;transition:transform .2s}
 .chat-sugg .s:active{transform:scale(.94)}
 .chat-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 4px 2px;margin-top:8px;border-top:1px solid var(--border)}
-.chat-bar textarea{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:11px 14px;font-size:14px;color:var(--text);font-family:inherit;resize:none;max-height:110px;min-height:44px;line-height:1.4;outline:none;transition:border-color .25s,box-shadow .25s}
+.chat-bar textarea{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:11px 14px;font-size:14px;color:var(--text);font-family:inherit;resize:none;max-height:200px;min-height:44px;line-height:1.4;outline:none;transition:border-color .25s,box-shadow .25s}
 .chat-bar textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
 .chat-send{width:44px;height:44px;border-radius:14px;background:var(--grad);color:#fff;border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0;box-shadow:var(--glow);transition:transform .15s}
 .chat-send:active{transform:scale(.9)}
@@ -976,7 +975,21 @@ async function loadCoach(){try{const m=await api('/api/webapp/coach');setText('c
 function chatAppend(role,text){const log=document.getElementById('chatLog');if(!log)return null;const el=document.createElement('div');el.className='chat-msg '+(role==='user'?'user':role==='err'?'err':'bot');el.textContent=text;log.appendChild(el);log.scrollTop=log.scrollHeight;return el;}
 function chatTyping(on){const log=document.getElementById('chatLog');if(!log)return;let t=document.getElementById('chatTyping');if(on){if(!t){t=document.createElement('div');t.id='chatTyping';t.className='chat-typing';t.innerHTML='<i></i><i></i><i></i>';log.appendChild(t);}log.scrollTop=log.scrollHeight;}else if(t){t.remove();}}
 function chatSetLimit(s){const el=document.getElementById('chatLimit');if(!el)return;if(s&&s.is_premium){el.style.display='inline-block';el.textContent='💎 Cheksiz';}else if(s&&typeof s.remaining==='number'&&s.limit>0){el.style.display='inline-block';el.textContent='💬 '+s.remaining+'/'+s.limit;}else{el.style.display='none';}}
-function chatGreet(){if(State.chatGreeted)return;State.chatGreeted=true;const nm=State.user?.first_name||'do\'st';chatAppend('bot','Salom, '+nm+'! 🌱 Men Intizom AI — sening shaxsiy murabbiyingman. Maqsad va rejalaringni ko\'rib turibman. Nima ustida ishlaymiz?');}
+function chatGreet(){if(State.chatGreeted)return;State.chatGreeted=true;const nm=State.user?.first_name||'do\'st';chatAppend('bot','Salom, '+nm+'! 🌱 Men Intizom AI — sening shaxsiy murabbiyingman. Maqsad va rejalaringni ko\'rib turibman. Pastda sening ma\'lumotlaring tayyor — uni jo\'nat, keyin savol ber yoki shunchaki yoz.');prefillChatContext();}
+
+async function prefillChatContext(){
+  const input=document.getElementById('chatInput');
+  if(!input||input.value.trim()||State.ctxPrefilled)return;
+  State.ctxPrefilled=true;
+  try{
+    const d=await api('/api/webapp/ai/context');
+    if(d&&d.context&&!input.value.trim()){
+      input.value=d.context+'\n\nSavolim: ';
+      input.style.height='auto';
+      input.style.height=Math.min(180,input.scrollHeight)+'px';
+    }
+  }catch(e){console.warn('ctx prefill',e);State.ctxPrefilled=false;}
+}
 async function chatSend(text){
   text=(text||'').trim();if(!text||State.chatBusy)return;
   const input=document.getElementById('chatInput');const sendBtn=document.getElementById('chatSend');const sugg=document.getElementById('chatSugg');
@@ -1054,6 +1067,7 @@ async function loadSubscription(){
   try{
     const s=await api('/api/webapp/subscription');
     State.sub=s;
+    try{localStorage.setItem('iz_premium',s.is_premium?'1':'0');}catch(_){}
     renderPaywallPlans(s.plans);
     applyPremiumUI(s);
     if(s.is_premium){closePaywall();}
@@ -1256,6 +1270,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('notifToggle').onclick=e=>e.currentTarget.classList.toggle('on');
   document.getElementById('animToggle').onclick=e=>e.currentTarget.classList.toggle('on');
   updateFabVisibility();
+  // Optimistik: oldingi seansda premium bo'lsa, paywallni darhol yopamiz
+  // (teskari "flash" bo'lmasligi uchun). loadSubscription keyin tasdiqlaydi.
+  try{if(localStorage.getItem('iz_premium')==='1')closePaywall();}catch(_){}
   loadSubscription();
   loadPlansAPI().then(()=>{loadGoalsAPI();loadSnapshot();loadQuest();});
 
@@ -1263,7 +1280,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   // AI chat wiring (ephemeral suhbat)
   const _chatInput=document.getElementById('chatInput');
   const _chatSend=document.getElementById('chatSend');
-  if(_chatInput){_chatInput.addEventListener('input',()=>{_chatInput.style.height='auto';_chatInput.style.height=Math.min(110,_chatInput.scrollHeight)+'px';});_chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(_chatInput.value);}});}
+  if(_chatInput){_chatInput.addEventListener('input',()=>{_chatInput.style.height='auto';_chatInput.style.height=Math.min(200,_chatInput.scrollHeight)+'px';});_chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(_chatInput.value);}});}
   if(_chatSend)_chatSend.onclick=()=>chatSend(document.getElementById('chatInput').value);
   document.querySelectorAll('#chatSugg .s').forEach(s=>s.onclick=()=>chatSend(s.dataset.q));
   document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#moodRow .mood-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');State.checkinMood=p.dataset.mood;saveCheckin({mood:State.checkinMood});});

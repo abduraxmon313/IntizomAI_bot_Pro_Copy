@@ -49,6 +49,10 @@ class ChatOut(BaseModel):
     limit: int = -1
 
 
+class ContextOut(BaseModel):
+    context: str
+
+
 GOAL_TYPE_UZ = {
     "yearly": "Yillik",
     "monthly": "Oylik",
@@ -171,6 +175,27 @@ async def _build_context(session: AsyncSession, user) -> str:
         lines.append("Oxirgi 7 kunda kayfiyat belgilanmagan.")
 
     return "\n".join(lines)
+
+
+@router.get("/ai/context", response_model=ContextOut)
+async def ai_context(
+    telegram_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Foydalanuvchining maqsad/reja/kayfiyat ma'lumotlarini o'qiy oladigan
+    matn ko'rinishida qaytaradi. Frontend buni chat input'iga oldindan
+    yozib qo'yadi — foydalanuvchi uni jo'natib, keyin savolini beradi.
+    """
+    user = await get_user_by_telegram_id(session, telegram_id)
+    if not user:
+        raise HTTPException(404, "Foydalanuvchi topilmadi. Avval botda /start bosing.")
+    try:
+        ctx = await _build_context(session, user)
+    except Exception as e:
+        logger.error(f"⚠️ AI context endpoint xato: {type(e).__name__}: {e}", exc_info=True)
+        ctx = "Ma'lumot vaqtincha mavjud emas."
+    return ContextOut(context=ctx)
 
 
 @router.post("/ai/chat", response_model=ChatOut)
