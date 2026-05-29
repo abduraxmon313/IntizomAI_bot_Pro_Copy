@@ -53,6 +53,8 @@ USER_NEW_COLUMNS = [
     ("onboarded", "BOOLEAN DEFAULT FALSE"),
     ("rank_title", "VARCHAR(40)"),
     ("avatar_emoji", "VARCHAR(8) DEFAULT '🌱'"),
+    ("ai_msgs_date", "DATE"),
+    ("ai_msgs_count", "INTEGER DEFAULT 0"),
 ]
 
 

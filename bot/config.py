@@ -46,6 +46,9 @@ WEBAPP_URL = os.getenv("WEBAPP_URL", "").strip()
 # Free (bepul) foydalanuvchi uchun kunlik reja limiti.
 FREE_DAILY_PLAN_LIMIT = int(os.getenv("FREE_DAILY_PLAN_LIMIT", 5))
 
+# Free foydalanuvchi uchun kunlik AI Coach suhbat limiti (taste → premiumga undash).
+FREE_AI_DAILY_LIMIT = int(os.getenv("FREE_AI_DAILY_LIMIT", 3))
+
 # Obuna planlari: kalit -> (nom, davomiylik kun, narx so'mda).
 SUBSCRIPTION_PLANS = {
     "1m":  {"title": "1 oylik",  "days": 30,  "price": 9900},
