@@ -144,6 +144,36 @@ async def edit_plan(
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    # Agar reja "done" yoki "failed" deb belgilansa — gamification dvigatelini
+    # ishga tushiramiz (XP, streak, discipline score, achievements yangilanadi).
+    # Bu Mini App'dagi belgilash ham botdagidek hisoblanishini ta'minlaydi.
+    if body.status in ("done", "failed"):
+        from bot.models.plan import Plan, PlanStatus
+        from sqlalchemy import and_, select
+        from bot.services.gamification_service import reward_completion
+
+        res = await session.execute(
+            select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
+        )
+        plan = res.scalar_one_or_none()
+        if not plan:
+            raise HTTPException(status_code=404, detail="Reja topilmadi")
+
+        # reward_completion faqat pending rejalarni mukofotlaydi (idempotent).
+        if plan.status == PlanStatus.pending:
+            await reward_completion(session, user, plan, is_done=(body.status == "done"))
+        else:
+            # Allaqachon belgilangan — faqat boshqa maydonlar bo'lsa yangilaymiz
+            if body.title is not None or body.description is not None or body.scheduled_time is not None:
+                await update_plan_fields(
+                    session, plan_id, user.id,
+                    title=body.title, description=body.description,
+                    scheduled_time=body.scheduled_time, status=None,
+                )
+        await session.refresh(plan)
+        return _serialize(plan)
+
     plan = await update_plan_fields(
         session, plan_id, user.id,
         title=body.title,

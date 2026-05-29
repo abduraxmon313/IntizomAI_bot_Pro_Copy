@@ -109,8 +109,9 @@ async def admin_users_count(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
         return
 
-    from bot.services.admin_service import get_detailed_users_stats
+    from bot.services.admin_service import get_detailed_users_stats, get_activity_stats
     stats = await get_detailed_users_stats(session)
+    activity = await get_activity_stats(session)
 
     # Top userlar
     top_text = ""
@@ -127,6 +128,12 @@ async def admin_users_count(callback: CallbackQuery, session: AsyncSession):
         f"👥 Jami: <b>{stats['total']} ta</b>\n"
         f"✅ Aktiv (rejasi bor): <b>{stats['active']} ta</b>\n"
         f"😴 Harakatsiz: <b>{stats['inactive']} ta</b>\n\n"
+        f"━━━━━━━━━━━━━━━\n"
+        f"📈 <b>Faollik (kamida 1 marta):</b>\n"
+        f"• Oxirgi 3 kun: <b>{activity['active_3']} ta</b>\n"
+        f"• Oxirgi 7 kun: <b>{activity['active_7']} ta</b>\n"
+        f"• Oxirgi 30 kun: <b>{activity['active_30']} ta</b>\n"
+        f"🔥 Oxirgi 7 kun HAR KUNI faol: <b>{activity['daily_active_7']} ta</b>\n\n"
         f"━━━━━━━━━━━━━━━\n"
         f"📊 <b>Statuslar bo'yicha:</b>\n"
         f"🏆 Ustoz: <b>{sc['🏆 Ustoz']} ta</b>\n"
@@ -544,30 +551,66 @@ async def broadcast_send_confirmed(callback: CallbackQuery, state: FSMContext, s
                 reply_markup=back_to_admin_keyboard()
             )
     else:
-        # Barcha userlarga
+        # Barcha userlarga — Telegram flood limitidan saqlanish uchun
+        # har bir xabar orasida kichik pauza (0.05s ≈ 20 msg/sek) qo'yamiz
+        # va flood xatosi bo'lsa kutib qayta urinamiz.
+        import asyncio
+        from aiogram.exceptions import TelegramRetryAfter, TelegramForbiddenError
+
         users = await get_all_users(session)
+        total = len(users)
         sent = 0
         failed = 0
+        blocked = 0
 
-        await callback.message.edit_text("⏳ Yuborilmoqda...")
+        progress_msg = await callback.message.edit_text(
+            f"⏳ Yuborilmoqda... 0/{total}"
+        )
 
-        for user in users:
+        for i, user in enumerate(users, 1):
             try:
                 await callback.bot.send_message(
                     chat_id=user.telegram_id,
                     text=final_text,
-                    parse_mode="HTML"
+                    parse_mode="HTML",
                 )
                 sent += 1
+            except TelegramRetryAfter as e:
+                # Telegram flood limit — ko'rsatilgan vaqt kutib, qayta urinamiz
+                await asyncio.sleep(e.retry_after + 1)
+                try:
+                    await callback.bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=final_text,
+                        parse_mode="HTML",
+                    )
+                    sent += 1
+                except Exception:
+                    failed += 1
+            except TelegramForbiddenError:
+                # User botni bloklagan / to'xtatgan
+                blocked += 1
             except Exception:
                 failed += 1
 
-        await callback.message.edit_text(
+            # Har 25 ta xabardan keyin progressni yangilaymiz
+            if i % 25 == 0:
+                try:
+                    await progress_msg.edit_text(f"⏳ Yuborilmoqda... {i}/{total}")
+                except Exception:
+                    pass
+
+            # Sekundlik pauza — flood limitiga tushmaslik uchun
+            await asyncio.sleep(0.05)
+
+        await progress_msg.edit_text(
             f"✅ <b>Xabar yuborildi!</b>\n\n"
+            f"👥 Jami: <b>{total} ta</b>\n"
             f"✅ Muvaffaqiyatli: <b>{sent} ta</b>\n"
+            f"🚫 Bloklagan: <b>{blocked} ta</b>\n"
             f"❌ Yuborilmadi: <b>{failed} ta</b>",
             parse_mode="HTML",
-            reply_markup=back_to_admin_keyboard()
+            reply_markup=back_to_admin_keyboard(),
         )
 
     await callback.answer()

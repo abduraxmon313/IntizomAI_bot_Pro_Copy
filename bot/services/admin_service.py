@@ -123,3 +123,63 @@ async def get_detailed_users_stats(session: AsyncSession) -> dict:
         "status_counts": status_counts,
         "top_users": top_users,
     }
+
+
+async def get_activity_stats(session: AsyncSession) -> dict:
+    """
+    Faollik statistikasi:
+      • Oxirgi 3 / 7 / 30 kun ichida kamida bir marta foydalanganlar
+      • Oxirgi 7 kun davomida HAR KUNI foydalanib kelganlar
+
+    "Foydalandi" belgisi sifatida ScoreLog (reja bajarish/bajarmaslik) va
+    Plan yaratish kunlari, hamda users.last_active dan foydalanamiz.
+    """
+    from datetime import datetime, timedelta
+    from bot.config import TIMEZONE
+    from bot.models.score_log import ScoreLog
+
+    now = datetime.now(TIMEZONE)
+    today = now.date()
+
+    # last_active asosida 3/7/30 kun
+    cutoff_3 = datetime.utcnow() - timedelta(days=3)
+    cutoff_7 = datetime.utcnow() - timedelta(days=7)
+    cutoff_30 = datetime.utcnow() - timedelta(days=30)
+
+    active_3 = await session.scalar(
+        select(func.count(User.id)).where(
+            and_(User.last_active != None, User.last_active >= cutoff_3)  # noqa: E711
+        )
+    ) or 0
+    active_7 = await session.scalar(
+        select(func.count(User.id)).where(
+            and_(User.last_active != None, User.last_active >= cutoff_7)  # noqa: E711
+        )
+    ) or 0
+    active_30 = await session.scalar(
+        select(func.count(User.id)).where(
+            and_(User.last_active != None, User.last_active >= cutoff_30)  # noqa: E711
+        )
+    ) or 0
+
+    # Oxirgi 7 kun davomida HAR KUNI faol bo'lganlar.
+    # ScoreLog yozuvlari kun bo'yicha guruhlangan: agar foydalanuvchida
+    # oxirgi 7 kunning har birida kamida bitta yozuv bo'lsa — "har kuni faol".
+    week_start = today - timedelta(days=6)
+    rows = await session.execute(
+        select(ScoreLog.user_id, func.date(ScoreLog.created_at)).where(
+            func.date(ScoreLog.created_at) >= week_start
+        ).distinct()
+    )
+    day_set: dict = {}
+    for uid, d in rows.all():
+        # d str yoki date bo'lishi mumkin — str ko'rinishida normalize qilamiz
+        day_set.setdefault(uid, set()).add(str(d))
+    daily_streak_7 = sum(1 for uid, days in day_set.items() if len(days) >= 7)
+
+    return {
+        "active_3": active_3,
+        "active_7": active_7,
+        "active_30": active_30,
+        "daily_active_7": daily_streak_7,
+    }

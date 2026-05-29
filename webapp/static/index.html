@@ -886,7 +886,7 @@ function initUser(){const u=tg?.initDataUnsafe?.user;if(u){State.telegramId=u.id
 const nm=State.user.first_name||'Foydalanuvchi';const ini=(nm[0]||'A').toUpperCase();
 document.getElementById('userName').textContent=nm;document.getElementById('profName').textContent=nm;document.getElementById('profAv').textContent=ini;document.getElementById('profUn').textContent=State.user.username?'@'+State.user.username:'';document.getElementById('todayDate').textContent=formatDateLong(new Date());}
 
-async function api(path,opts={}){const url=API+path+(path.includes('?')?'&':'?')+'telegram_id='+State.telegramId;const res=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});if(!res.ok)throw new Error('API '+res.status);return res.json();}
+async function api(path,opts={}){const url=API+path+(path.includes('?')?'&':'?')+'telegram_id='+State.telegramId;const headers={'Content-Type':'application/json',...(opts.headers||{})};try{if(tg&&tg.initData)headers['X-Telegram-Init-Data']=tg.initData;}catch(_){}const res=await fetch(url,{headers,...opts});if(!res.ok)throw new Error('API '+res.status);return res.json();}
 
 async function loadPlansAPI(){try{const d=await api('/api/webapp/plans');State.plans=d.plans||[];if(d.user){State.user={...State.user,...d.user};setText('streakCount',d.user.streak||0);setText('msScore',d.user.total_score||0);setText('stStreak',d.user.streak||0);setText('stTotal',d.user.total_score||0);setText('pfStreak',d.user.streak||0);setText('pfScore',d.user.total_score||0);}setText('msPlans',State.plans.length);renderDayStrip();renderPlans();renderHero();updateHomePlansTitle();}catch(e){console.warn('plans',e);State.plans=[];renderPlans();}}
 
@@ -975,21 +975,8 @@ async function loadCoach(){try{const m=await api('/api/webapp/coach');setText('c
 function chatAppend(role,text){const log=document.getElementById('chatLog');if(!log)return null;const el=document.createElement('div');el.className='chat-msg '+(role==='user'?'user':role==='err'?'err':'bot');el.textContent=text;log.appendChild(el);log.scrollTop=log.scrollHeight;return el;}
 function chatTyping(on){const log=document.getElementById('chatLog');if(!log)return;let t=document.getElementById('chatTyping');if(on){if(!t){t=document.createElement('div');t.id='chatTyping';t.className='chat-typing';t.innerHTML='<i></i><i></i><i></i>';log.appendChild(t);}log.scrollTop=log.scrollHeight;}else if(t){t.remove();}}
 function chatSetLimit(s){const el=document.getElementById('chatLimit');if(!el)return;if(s&&s.is_premium){el.style.display='inline-block';el.textContent='💎 Cheksiz';}else if(s&&typeof s.remaining==='number'&&s.limit>0){el.style.display='inline-block';el.textContent='💬 '+s.remaining+'/'+s.limit;}else{el.style.display='none';}}
-function chatGreet(){if(State.chatGreeted)return;State.chatGreeted=true;const nm=State.user?.first_name||'do\'st';chatAppend('bot','Salom, '+nm+'! 🌱 Men Intizom AI — sening shaxsiy murabbiyingman. Maqsad va rejalaringni ko\'rib turibman. Pastda sening ma\'lumotlaring tayyor — uni jo\'nat, keyin savol ber yoki shunchaki yoz.');prefillChatContext();}
+function chatGreet(){if(State.chatGreeted)return;State.chatGreeted=true;const nm=State.user?.first_name||'do\'st';chatAppend('bot','Salom, '+nm+'! 🌱 Men Intizom AI — sening shaxsiy murabbiyingman. Maqsad va rejalaringni ko\'rib turibman. Savolingni yoz — men sening rejalaring va kayfiyatingga qarab javob beraman.');}
 
-async function prefillChatContext(){
-  const input=document.getElementById('chatInput');
-  if(!input||input.value.trim()||State.ctxPrefilled)return;
-  State.ctxPrefilled=true;
-  try{
-    const d=await api('/api/webapp/ai/context');
-    if(d&&d.context&&!input.value.trim()){
-      input.value=d.context+'\n\nSavolim: ';
-      input.style.height='auto';
-      input.style.height=Math.min(180,input.scrollHeight)+'px';
-    }
-  }catch(e){console.warn('ctx prefill',e);State.ctxPrefilled=false;}
-}
 async function chatSend(text){
   text=(text||'').trim();if(!text||State.chatBusy)return;
   const input=document.getElementById('chatInput');const sendBtn=document.getElementById('chatSend');const sugg=document.getElementById('chatSugg');

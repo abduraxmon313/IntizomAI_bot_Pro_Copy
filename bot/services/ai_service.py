@@ -332,28 +332,33 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         if not convo:
             return "Salom! Men Intizom AI murabbiyingman 🌱 Bugun nima ustida ishlaymiz?"
 
-        # Oxirgi foydalanuvchi savolini topamiz
-        last_user_idx = None
-        for i in range(len(convo) - 1, -1, -1):
-            if convo[i]["role"] == "user":
-                last_user_idx = i
-                break
+        # Kontekst FAQAT suhbatning birinchi savolida yuboriladi (har safar emas).
+        # Keyingi savollarda model kontekstni suhbat tarixidan "eslab" turadi.
+        user_turns = sum(1 for m in convo if m["role"] == "user")
+        first_question = user_turns <= 1
 
-        # Kontekstni AYNAN oxirgi savolning ICHIGA joylashtiramiz — model uni
-        # e'tiborsiz qoldira olmaydi (savolning o'zi bilan birga keladi).
-        if last_user_idx is not None:
-            user_question = convo[last_user_idx]["content"]
-            convo[last_user_idx] = {
-                "role": "user",
-                "content": (
-                    "[MENING JONLI MA'LUMOTLARIM — bazadan olingan, shu asosda javob ber:]\n"
-                    + context_block +
-                    "\n\n[MENING SAVOLIM:]\n" + user_question +
-                    "\n\n(Eslatma: yuqoridagi ma'lumotlar — mening haqiqiy maqsad, reja va "
-                    "kayfiyatim. Shularga tayanib, aniq nom va raqamlar bilan javob ber. "
-                    "'Ma'lumot yo'q' DEMA.)"
-                ),
-            }
+        if first_question:
+            # Oxirgi foydalanuvchi savolini topamiz
+            last_user_idx = None
+            for i in range(len(convo) - 1, -1, -1):
+                if convo[i]["role"] == "user":
+                    last_user_idx = i
+                    break
+            # Kontekstni AYNAN oxirgi savolning ICHIGA joylashtiramiz — model uni
+            # e'tiborsiz qoldira olmaydi (savolning o'zi bilan birga keladi).
+            if last_user_idx is not None:
+                user_question = convo[last_user_idx]["content"]
+                convo[last_user_idx] = {
+                    "role": "user",
+                    "content": (
+                        "[MENING JONLI MA'LUMOTLARIM — bazadan olingan, shu asosda javob ber:]\n"
+                        + context_block +
+                        "\n\n[MENING SAVOLIM:]\n" + user_question +
+                        "\n\n(Eslatma: yuqoridagi ma'lumotlar — mening haqiqiy maqsad, reja va "
+                        "kayfiyatim. Shularga tayanib, aniq nom va raqamlar bilan javob ber. "
+                        "'Ma'lumot yo'q' DEMA.)"
+                    ),
+                }
 
         messages = [{"role": "system", "content": COACH_PERSONA}]
         messages.extend(convo)
