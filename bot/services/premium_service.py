@@ -22,6 +22,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import (
+    FREE_AI_DAILY_LIMIT,
     FREE_DAILY_PLAN_LIMIT,
     PROMO_CODE,
     SUBSCRIPTION_PLANS,
@@ -335,6 +336,39 @@ async def check_plan_limit(
     remaining = max(0, limit - used)
     allowed = (used + adding) <= limit
     return LimitCheck(allowed=allowed, used=used, limit=limit, remaining=remaining)
+
+
+async def check_and_consume_ai(session: AsyncSession, user: User) -> LimitCheck:
+    """
+    AI Coach suhbati uchun kunlik limitni tekshiradi va (free bo'lsa) 1 ta sarflaydi.
+    Premium — cheksiz (limit=-1). Free — FREE_AI_DAILY_LIMIT/kun.
+    Kun almashsa hisoblagich avtomatik nolga tushadi.
+    """
+    if user_is_premium(user):
+        return LimitCheck(allowed=True, used=0, limit=-1, remaining=-1)
+
+    from bot.config import TIMEZONE
+    today = datetime.now(TIMEZONE).date()
+
+    if user.ai_msgs_date != today:
+        user.ai_msgs_date = today
+        user.ai_msgs_count = 0
+
+    limit = FREE_AI_DAILY_LIMIT
+    used = user.ai_msgs_count or 0
+
+    if used >= limit:
+        await session.commit()  # kun reset bo'lgan bo'lsa saqlaymiz
+        return LimitCheck(allowed=False, used=used, limit=limit, remaining=0)
+
+    user.ai_msgs_count = used + 1
+    await session.commit()
+    return LimitCheck(
+        allowed=True,
+        used=user.ai_msgs_count,
+        limit=limit,
+        remaining=max(0, limit - user.ai_msgs_count),
+    )
 
 
 # ─────────────────────────────────────────────────────────────

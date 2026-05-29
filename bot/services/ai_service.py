@@ -283,3 +283,71 @@ FAQAT VAQTNI JAVOB QIL, MASALAN: 17:30 yoki null"""
     except Exception as e:
         logger.error(f"❌ Vaqt chiqarish xatosi: {type(e).__name__}: {str(e)}")
         return None
+
+
+
+# ─────────────────────────────────────────────────────────────
+#  AI COACH — suhbat (chat) rejimi
+# ─────────────────────────────────────────────────────────────
+COACH_PERSONA = """Sen — "Intizom AI", o'zbek tilida gaplashadigan shaxsiy intizom va motivatsiya murabbiysisan.
+
+SHAXSIYATING:
+- Iliq, qo'llab-quvvatlovchi, aqlli va hissiyotni tushunadigan do'st.
+- Foydalanuvchini "qiluvchi", intizomli shaxs sifatida ko'rasan va shunga undaysan.
+- Hech qachon haqorat qilmaysan, uyaltirmaysan, ayblamaysasan. Doim oldinga yo'naltirasan.
+- Gen Z talabalar bilan tabiiy, samimiy, lekin ortiqcha rasmiyatsiz gaplashasan.
+
+USLUB:
+- O'zbek tilida (lotin), qisqa va aniq: 2-5 jumla. Kerak bo'lsa ro'yxat.
+- 1-2 ta mos emoji ishlat, lekin haddan oshirma.
+- Foydalanuvchining maqsadlari, rejalari, streak va discipline score'iga ASOSLANIB javob ber.
+- Aniq, amalga oshirsa bo'ladigan keyingi qadam taklif qil.
+- Agar savol intizom/maqsad/o'qish/motivatsiyaga aloqasi bo'lmasa — qisqa, foydali javob ber va imkon bo'lsa intizom maqsadiga bog'la.
+
+MUHIM:
+- Sen foydalanuvchining real ma'lumotlarini ko'ryapsan (pastda beriladi). Shu ma'lumotdan foydalanib, shaxsiylashtirilgan javob ber.
+- Ma'lumot bo'lmasa, umumiy lekin samimiy javob ber.
+- Hech qachon "men sun'iy intellektman, ma'lumotга kira olmayman" dema — sen kontekstni ko'ryapsan."""
+
+
+async def chat_with_coach(context_block: str, history: list[dict]) -> str:
+    """
+    AI Coach bilan suhbat. `history` — [{role, content}, ...] (ephemeral,
+    saqlanmaydi). `context_block` — foydalanuvchining maqsad/reja/statistikasi.
+    """
+    try:
+        messages = [
+            {"role": "system", "content": COACH_PERSONA},
+            {
+                "role": "system",
+                "content": (
+                    "FOYDALANUVCHI HAQIDA JORIY MA'LUMOT "
+                    "(shunga asoslanib javob ber):\n" + context_block
+                ),
+            },
+        ]
+        # Faqat oxirgi 12 ta xabarni olamiz (xarajat nazorati)
+        for m in history[-12:]:
+            role = m.get("role")
+            content = (m.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content[:1500]})
+
+        if len(messages) <= 2:
+            return "Salom! Men Intizom AI murabbiyingman 🌱 Bugun nima ustida ishlaymiz?"
+
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=450,
+        )
+        reply = (response.choices[0].message.content or "").strip()
+        return reply or "Hmm, hozir javob topa olmadim. Yana bir bor yozib ko'rasanmi?"
+
+    except Exception as e:
+        logger.error(f"❌ AI Coach chat xatosi: {type(e).__name__}: {e}")
+        return (
+            "⚠️ Hozir AI bilan bog'lanishda kichik nosozlik bo'ldi. "
+            "Bir oz kutib, qaytadan urinib ko'r."
+        )

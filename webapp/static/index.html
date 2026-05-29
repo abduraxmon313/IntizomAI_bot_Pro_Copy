@@ -468,6 +468,36 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .paywall .pw-cta:active{transform:scale(.98)}
 .paywall .pw-badge{display:block;text-align:center;font-size:12px;opacity:.65;margin-top:14px;letter-spacing:1px}
 
+/* ── AI Chat ────────────────────────────────────────────────────────────── */
+.chat-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:14px 12px 12px;margin-bottom:14px;display:flex;flex-direction:column;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:10px;padding:0 4px 10px;border-bottom:1px solid var(--border);margin-bottom:10px}
+.chat-head .av{width:38px;height:38px;border-radius:12px;background:var(--grad);display:grid;place-items:center;font-size:20px;flex-shrink:0;box-shadow:var(--glow)}
+.chat-head .ti{flex:1;min-width:0}
+.chat-head .ti .nm{font-size:14px;font-weight:800}
+.chat-head .ti .st{font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:5px}
+.chat-head .ti .st .dot{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)}
+.chat-head .lim{font-size:10.5px;font-weight:700;color:var(--primary);background:var(--primary-soft);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.chat-log{display:flex;flex-direction:column;gap:10px;max-height:46vh;min-height:120px;overflow-y:auto;padding:4px 4px 6px;scroll-behavior:smooth}
+.chat-msg{max-width:85%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;animation:msgIn .35s cubic-bezier(.22,1,.36,1) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.chat-msg.bot{align-self:flex-start;background:var(--surface-2);border:1px solid var(--border);border-bottom-left-radius:5px;color:var(--text)}
+.chat-msg.user{align-self:flex-end;background:var(--grad);color:#fff;border-bottom-right-radius:5px;box-shadow:var(--glow)}
+.chat-msg.err{align-self:center;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:var(--danger);font-size:12.5px;max-width:95%;text-align:center}
+.chat-typing{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:5px}
+.chat-typing i{width:7px;height:7px;border-radius:50%;background:var(--text-3);animation:typing 1.2s infinite ease-in-out}
+.chat-typing i:nth-child(2){animation-delay:.2s}.chat-typing i:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.chat-sugg{display:flex;gap:7px;flex-wrap:wrap;padding:8px 4px 4px}
+.chat-sugg .s{font-size:12px;font-weight:600;color:var(--primary);background:var(--primary-soft);border:1px solid var(--border);border-radius:999px;padding:7px 12px;cursor:pointer;transition:transform .2s}
+.chat-sugg .s:active{transform:scale(.94)}
+.chat-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 4px 2px;margin-top:8px;border-top:1px solid var(--border)}
+.chat-bar textarea{flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:16px;padding:11px 14px;font-size:14px;color:var(--text);font-family:inherit;resize:none;max-height:110px;min-height:44px;line-height:1.4;outline:none;transition:border-color .25s,box-shadow .25s}
+.chat-bar textarea:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
+.chat-send{width:44px;height:44px;border-radius:14px;background:var(--grad);color:#fff;border:none;display:grid;place-items:center;cursor:pointer;flex-shrink:0;box-shadow:var(--glow);transition:transform .15s}
+.chat-send:active{transform:scale(.9)}
+.chat-send:disabled{opacity:.5;cursor:not-allowed}
+.chat-send svg{width:20px;height:20px}
+
 </style>
 </head>
 <body>
@@ -560,6 +590,29 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
   <div class="ico" id="coachIco">🌅</div>
   <div class="msg" id="coachMsg">Yuklanmoqda…</div>
   <div class="tag" id="coachTag">COACH</div>
+</div>
+
+<div class="chat-card" id="chatCard">
+  <div class="chat-head">
+    <div class="av">🤖</div>
+    <div class="ti">
+      <div class="nm">Intizom AI</div>
+      <div class="st"><span class="dot"></span> Sening maqsadlaringni ko'rib turibdi</div>
+    </div>
+    <div class="lim" id="chatLimit" style="display:none"></div>
+  </div>
+  <div class="chat-log" id="chatLog"></div>
+  <div class="chat-sugg" id="chatSugg">
+    <div class="s" data-q="Bugun nimadan boshlasam yaxshi bo'ladi?">Bugun nimadan boshlay?</div>
+    <div class="s" data-q="Maqsadlarimga qanday erishaman?">Maqsadlarim bo'yicha</div>
+    <div class="s" data-q="Motivatsiya bermaysanmi?">Menga turtki ber</div>
+  </div>
+  <div class="chat-bar">
+    <textarea id="chatInput" rows="1" placeholder="Intizom AI ga yoz… (maqsad, reja, motivatsiya)"></textarea>
+    <button class="chat-send" id="chatSend" aria-label="Yuborish">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
 </div>
 
 <div class="section-title"><h2>Bugungi kayfiyat</h2></div>
@@ -795,6 +848,44 @@ async function loadQuest(){try{const q=await api('/api/webapp/quest');const c=do
 
 async function loadCoach(){try{const m=await api('/api/webapp/coach');document.getElementById('coachIco').textContent=m.icon||'✨';document.getElementById('coachMsg').textContent=m.text||'';document.getElementById('coachTag').textContent=(m.tone||'coach').toUpperCase();}catch(e){console.warn('coach',e);}}
 
+// ── AI Chat (ephemeral — saqlanmaydi) ───────────────────────────────────
+function chatAppend(role,text){const log=document.getElementById('chatLog');if(!log)return null;const el=document.createElement('div');el.className='chat-msg '+(role==='user'?'user':role==='err'?'err':'bot');el.textContent=text;log.appendChild(el);log.scrollTop=log.scrollHeight;return el;}
+function chatTyping(on){const log=document.getElementById('chatLog');if(!log)return;let t=document.getElementById('chatTyping');if(on){if(!t){t=document.createElement('div');t.id='chatTyping';t.className='chat-typing';t.innerHTML='<i></i><i></i><i></i>';log.appendChild(t);}log.scrollTop=log.scrollHeight;}else if(t){t.remove();}}
+function chatSetLimit(s){const el=document.getElementById('chatLimit');if(!el)return;if(s&&s.is_premium){el.style.display='inline-block';el.textContent='💎 Cheksiz';}else if(s&&typeof s.remaining==='number'&&s.limit>0){el.style.display='inline-block';el.textContent='💬 '+s.remaining+'/'+s.limit;}else{el.style.display='none';}}
+function chatGreet(){if(State.chatGreeted)return;State.chatGreeted=true;const nm=State.user?.first_name||'do\'st';chatAppend('bot','Salom, '+nm+'! 🌱 Men Intizom AI — sening shaxsiy murabbiyingman. Maqsad va rejalaringni ko\'rib turibman. Nima ustida ishlaymiz?');}
+async function chatSend(text){
+  text=(text||'').trim();if(!text||State.chatBusy)return;
+  const input=document.getElementById('chatInput');const sendBtn=document.getElementById('chatSend');const sugg=document.getElementById('chatSugg');
+  if(sugg)sugg.style.display='none';
+  chatAppend('user',text);
+  State.chatHistory=State.chatHistory||[];State.chatHistory.push({role:'user',content:text});
+  if(input){input.value='';input.style.height='auto';}
+  State.chatBusy=true;if(sendBtn)sendBtn.disabled=true;chatTyping(true);
+  try{
+    const data=await api('/api/webapp/ai/chat',{method:'POST',body:JSON.stringify({messages:State.chatHistory})});
+    chatTyping(false);
+    const reply=data.reply||'…';
+    chatAppend('bot',reply);
+    State.chatHistory.push({role:'assistant',content:reply});
+    chatSetLimit(data);
+    try{tg?.HapticFeedback?.impactOccurred('light');}catch(_){}
+  }catch(e){
+    chatTyping(false);
+    const msg=String(e&&e.message||'');
+    if(msg.includes('402')){
+      chatAppend('err','💎 Bugungi bepul AI suhbat limiti tugadi. Cheksiz AI Coach uchun Premium oling.');
+      setTimeout(()=>openPaywall(),700);
+    }else if(msg.includes('404')){
+      chatAppend('err','Avval botda /start bosing — keyin AI bilan suhbatlashasiz.');
+    }else{
+      chatAppend('err','⚠️ Bog\'lanishda nosozlik. Yana urinib ko\'r.');
+    }
+  }finally{
+    State.chatBusy=false;if(sendBtn)sendBtn.disabled=false;
+    if(input)input.focus();
+  }
+}
+
 async function loadCheckin(){try{const c=await api('/api/webapp/checkin');if(!c)return;if(c.mood){document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.classList.toggle('active',p.dataset.mood===c.mood));State.checkinMood=c.mood;}if(c.energy){document.querySelectorAll('#energyRow .energy-cell').forEach(p=>p.classList.toggle('active',+p.dataset.en===c.energy));State.checkinEnergy=c.energy;}if(c.intent){document.getElementById('intentTxt').value=c.intent;document.getElementById('intentSavedInfo').textContent='✓ Saqlangan';}if(c.reflection){document.getElementById('reflectTxt').value=c.reflection;document.getElementById('reflectSavedInfo').textContent='✓ Saqlangan';}}catch(e){console.warn('checkin',e);}}
 
 async function saveCheckin(payload){try{await api('/api/webapp/checkin',{method:'POST',body:JSON.stringify(payload)});}catch(_){toast('Saqlashda xato',true);}}
@@ -910,7 +1001,7 @@ function fabAction(){const ap=document.querySelector('.page.active').dataset.pag
 
 function updateFabVisibility(){/* inline add buttons now live inside sections */}
 
-function switchPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===n));document.querySelectorAll('.nav-item, .nav-ai').forEach(x=>x.classList.toggle('active',x.dataset.nav===n));if(n==='stats')renderStats();if(n==='goals'){renderGoalsView();requestAnimationFrame(moveGoalSegInd);}if(n==='ai'){loadCoach();loadCheckin();loadPlansRange().then(()=>renderInsights());}if(n==='home'){loadSnapshot();loadQuest();}updateFabVisibility();if(navigator.vibrate)navigator.vibrate(10);}
+function switchPage(n){document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.dataset.page===n));document.querySelectorAll('.nav-item, .nav-ai').forEach(x=>x.classList.toggle('active',x.dataset.nav===n));if(n==='stats')renderStats();if(n==='goals'){renderGoalsView();requestAnimationFrame(moveGoalSegInd);}if(n==='ai'){loadCoach();loadCheckin();chatGreet();loadPlansRange().then(()=>renderInsights());}if(n==='home'){loadSnapshot();loadQuest();}updateFabVisibility();if(navigator.vibrate)navigator.vibrate(10);}
 
 function ripple(e){const t=e.currentTarget;const r=t.getBoundingClientRect();const ink=document.createElement('span');ink.className='ripple-ink';const sz=Math.max(r.width,r.height);ink.style.width=ink.style.height=sz+'px';ink.style.left=(e.clientX-r.left-sz/2)+'px';ink.style.top=(e.clientY-r.top-sz/2)+'px';t.appendChild(ink);setTimeout(()=>ink.remove(),600);}
 
@@ -940,6 +1031,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadPlansAPI().then(()=>{loadGoalsAPI();loadSnapshot();loadQuest();});
 
   // ── AI page wiring ─────────────────────────────────────────────────
+  // AI chat wiring (ephemeral suhbat)
+  const _chatInput=document.getElementById('chatInput');
+  const _chatSend=document.getElementById('chatSend');
+  if(_chatInput){_chatInput.addEventListener('input',()=>{_chatInput.style.height='auto';_chatInput.style.height=Math.min(110,_chatInput.scrollHeight)+'px';});_chatInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chatSend(_chatInput.value);}});}
+  if(_chatSend)_chatSend.onclick=()=>chatSend(document.getElementById('chatInput').value);
+  document.querySelectorAll('#chatSugg .s').forEach(s=>s.onclick=()=>chatSend(s.dataset.q));
   document.querySelectorAll('#moodRow .mood-pill').forEach(p=>p.onclick=()=>{document.querySelectorAll('#moodRow .mood-pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');State.checkinMood=p.dataset.mood;saveCheckin({mood:State.checkinMood});});
   document.querySelectorAll('#energyRow .energy-cell').forEach(c=>c.onclick=()=>{document.querySelectorAll('#energyRow .energy-cell').forEach(x=>x.classList.remove('active'));c.classList.add('active');State.checkinEnergy=+c.dataset.en;saveCheckin({energy:State.checkinEnergy});});
   document.getElementById('intentSave').onclick=async()=>{const v=document.getElementById('intentTxt').value.trim();if(!v)return;await saveCheckin({intent:v});document.getElementById('intentSavedInfo').textContent='✓ Saqlandi';toast('🎯 Niyat saqlandi');};

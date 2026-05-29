@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from webapp.routes import goals, plans, stats, subscription
+from webapp.routes import goals, plans, stats, subscription, ai
 
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
@@ -55,6 +55,7 @@ app.include_router(plans.router, prefix="/api/webapp")
 app.include_router(goals.router, prefix="/api/webapp")
 app.include_router(stats.router, prefix="/api/webapp")
 app.include_router(subscription.router, prefix="/api/webapp")
+app.include_router(ai.router, prefix="/api/webapp")
 
 
 @app.get("/health")

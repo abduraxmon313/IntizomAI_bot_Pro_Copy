@@ -33,6 +33,10 @@ class User(Base):
     rank_title = Column(String(40), nullable=True)
     avatar_emoji = Column(String(8), default="🌱")
 
+    # ── AI Coach suhbat limiti (free-tier) ───────────────
+    ai_msgs_date = Column(Date, nullable=True)       # oxirgi hisoblangan kun
+    ai_msgs_count = Column(Integer, default=0)        # shu kungi AI xabarlar soni
+
     # ── System ───────────────────────────────────────────
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
