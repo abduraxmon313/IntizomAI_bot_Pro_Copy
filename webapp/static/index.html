@@ -869,7 +869,7 @@ function renderDayStrip(){
   strip.querySelectorAll('.day-chip').forEach(c=>c.onclick=()=>{State.selectedDate=new Date(c.dataset.day+'T00:00:00');loadPlansForSelectedDay();});
   // tanlangan chipni ko'rinishga keltirish
   const act=strip.querySelector('.day-chip.active');if(act)act.scrollIntoView({inline:'center',block:'nearest'});
-}async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}document.getElementById('msGoals').textContent=State.goals.length;document.getElementById('stGoals').textContent=State.goals.filter(g=>!g.completed).length;const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;document.getElementById('stDone').textContent=done;document.getElementById('pfDone').textContent=done;renderGoalsView();}
+}async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}setText('msGoals',State.goals.length);setText('stGoals',State.goals.filter(g=>!g.completed).length);const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;setText('stDone',done);setText('pfDone',done);renderGoalsView();}
 
 async function loadPlansRange(){try{const tod=new Date();const df=ymd(addDays(tod,-29));const dt=ymd(tod);const d=await api('/api/webapp/plans?date_from='+df+'&date_to='+dt);State.plansRange=d.plans||[];}catch(e){console.warn('range',e);State.plansRange=State.plans;}}
 
@@ -890,25 +890,25 @@ function renderHero(){
   const streak=snap.streak||State.user?.streak||0;
   const tDone=snap.today_done||0;
   const tTot=snap.today_total||0;
-  document.getElementById('rankEmoji').textContent=snap.rank_emoji||'🌱';
-  document.getElementById('rankTitle').textContent=snap.rank_title||'Boshlovchi';
-  document.getElementById('levelNum').textContent=lvl;
-  document.getElementById('xpInLvl').textContent=xpInLvl;
-  document.getElementById('xpNeeded').textContent=xpNeed;
-  document.getElementById('xpPctLabel').textContent=pct+'%';
-  document.getElementById('totalXpLabel').textContent=(snap.xp||0)+' XP';
-  document.getElementById('streakCount').textContent=streak;
-  document.getElementById('todayStat').textContent=tDone+'/'+tTot;
+  setText('rankEmoji',snap.rank_emoji||'🌱');
+  setText('rankTitle',snap.rank_title||'Boshlovchi');
+  setText('levelNum',lvl);
+  setText('xpInLvl',xpInLvl);
+  setText('xpNeeded',xpNeed);
+  setText('xpPctLabel',pct+'%');
+  setText('totalXpLabel',(snap.xp||0)+' XP');
+  setText('streakCount',streak);
+  setText('todayStat',tDone+'/'+tTot);
   const riskChip=document.getElementById('streakRiskChip');
-  if(snap.streak_at_risk&&streak>=2){riskChip.classList.add('warn');riskChip.innerHTML='<span class="em">⚠️</span> Streak xavf ostida';}else{riskChip.classList.remove('warn');riskChip.innerHTML='<span class="em">📋</span> '+tDone+'/'+tTot+' bugun';}
-  setTimeout(()=>{document.getElementById('xpBar').style.width=pct+'%';const C=2*Math.PI*42;document.getElementById('dsRing').setAttribute('stroke-dashoffset',String(C*(1-ds/100)));document.getElementById('dsValue').textContent=ds;},120);
+  if(riskChip){if(snap.streak_at_risk&&streak>=2){riskChip.classList.add('warn');riskChip.innerHTML='<span class="em">⚠️</span> Streak xavf ostida';}else{riskChip.classList.remove('warn');riskChip.innerHTML='<span class="em">📋</span> '+tDone+'/'+tTot+' bugun';}}
+  setTimeout(()=>{const xb=document.getElementById('xpBar');if(xb)xb.style.width=pct+'%';const C=2*Math.PI*42;const ring=document.getElementById('dsRing');if(ring)ring.setAttribute('stroke-dashoffset',String(C*(1-ds/100)));setText('dsValue',ds);},120);
 }
 
-async function loadSnapshot(){try{const s=await api('/api/webapp/stats');State.snap=s;State.user=Object.assign({},State.user||{},{streak:s.streak,total_score:State.user?.total_score||0});const prevAchs=State.knownAchs||new Set();const newAchs=[];(s.achievements||[]).forEach(a=>{if(!prevAchs.has(a.code)){if(prevAchs.size>0)newAchs.push(a);prevAchs.add(a.code);}});State.knownAchs=prevAchs;renderHero();if(newAchs.length){newAchs.forEach((a,i)=>setTimeout(()=>showUnlock(a),i*900));}document.getElementById('pfStreak').textContent=s.streak||0;document.getElementById('stStreak').textContent=s.streak||0;}catch(e){console.warn('snapshot',e);}}
+async function loadSnapshot(){try{const s=await api('/api/webapp/stats');State.snap=s;State.user=Object.assign({},State.user||{},{streak:s.streak,total_score:State.user?.total_score||0});const prevAchs=State.knownAchs||new Set();const newAchs=[];(s.achievements||[]).forEach(a=>{if(!prevAchs.has(a.code)){if(prevAchs.size>0)newAchs.push(a);prevAchs.add(a.code);}});State.knownAchs=prevAchs;renderHero();if(newAchs.length){newAchs.forEach((a,i)=>setTimeout(()=>showUnlock(a),i*900));}setText('pfStreak',s.streak||0);setText('stStreak',s.streak||0);}catch(e){console.warn('snapshot',e);}}
 
-async function loadQuest(){try{const q=await api('/api/webapp/quest');const c=document.getElementById('questCard');c.style.display='flex';c.classList.toggle('done',!!q.completed);document.getElementById('qIcon').textContent=q.icon||'🎯';document.getElementById('qTitle').textContent=q.title||'';document.getElementById('qSub').textContent=q.subtitle||'';const pct=q.target?Math.round((q.progress||0)*100/q.target):0;setTimeout(()=>{document.getElementById('qProg').style.width=pct+'%';},150);document.getElementById('qMetaProg').textContent=(q.progress||0)+'/'+(q.target||0);document.getElementById('qReward').textContent=q.reward_xp?('+'+q.reward_xp+' XP'):'✓';}catch(e){console.warn('quest',e);}}
+async function loadQuest(){try{const q=await api('/api/webapp/quest');const c=document.getElementById('questCard');if(!c)return;c.style.display='flex';c.classList.toggle('done',!!q.completed);setText('qIcon',q.icon||'🎯');setText('qTitle',q.title||'');setText('qSub',q.subtitle||'');const pct=q.target?Math.round((q.progress||0)*100/q.target):0;setTimeout(()=>{const qp=document.getElementById('qProg');if(qp)qp.style.width=pct+'%';},150);setText('qMetaProg',(q.progress||0)+'/'+(q.target||0));setText('qReward',q.reward_xp?('+'+q.reward_xp+' XP'):'✓');}catch(e){console.warn('quest',e);}}
 
-async function loadCoach(){try{const m=await api('/api/webapp/coach');document.getElementById('coachIco').textContent=m.icon||'✨';document.getElementById('coachMsg').textContent=m.text||'';document.getElementById('coachTag').textContent=(m.tone||'coach').toUpperCase();}catch(e){console.warn('coach',e);}}
+async function loadCoach(){try{const m=await api('/api/webapp/coach');setText('coachIco',m.icon||'✨');setText('coachMsg',m.text||'');setText('coachTag',(m.tone||'coach').toUpperCase());}catch(e){console.warn('coach',e);}}
 
 // ── AI Chat (ephemeral — saqlanmaydi) ───────────────────────────────────
 function chatAppend(role,text){const log=document.getElementById('chatLog');if(!log)return null;const el=document.createElement('div');el.className='chat-msg '+(role==='user'?'user':role==='err'?'err':'bot');el.textContent=text;log.appendChild(el);log.scrollTop=log.scrollHeight;return el;}
@@ -1110,17 +1110,22 @@ async function savePlanModal(){
   const tm=hh?(hh+':'+mm):null;
   const dt=document.getElementById('pDate')?.value||ymd(State.selectedDate||new Date());
   const body={title:t,description:desc||null,scheduled_time:tm,plan_date:dt};
+  const isEdit=!!State.planModal.id;
   try{
-    if(State.planModal.id){const np=await apiPlanUpdate(State.planModal.id,body);const idx=State.plans.findIndex(x=>x.id===State.planModal.id);if(idx>=0)State.plans[idx]=np;toast('✓ Yangilandi');}
-    else{const np=await apiPlanCreate(body);if(isSameDay(dt,State.selectedDate))State.plans.unshift(np);toast('✨ Reja qo\'shildi');}
-    closePlanModal();
-    await loadPlansForSelectedDay();
-    renderHero();
+    if(isEdit){const np=await apiPlanUpdate(State.planModal.id,body);const idx=State.plans.findIndex(x=>x.id===State.planModal.id);if(idx>=0)State.plans[idx]=np;}
+    else{await apiPlanCreate(body);}
   }catch(e){
     const msg=String(e&&e.message||'');
-    if(msg.includes('402')){closePlanModal();toast('💎 Bepul kunlik limit tugadi');openPaywall();}
-    else toast('Xato: '+msg,true);
+    if(msg.includes('402')){closePlanModal();toast('💎 Bepul kunlik limit tugadi');openPaywall();return;}
+    toast('Xato: '+msg,true);return;
   }
+  // Saqlash muvaffaqiyatli — endi UI ni yangilaymiz (bu yerdagi xato saqlashga ta'sir qilmaydi)
+  closePlanModal();
+  toast(isEdit?'✓ Yangilandi':'✨ Reja qo\'shildi');
+  try{
+    await loadPlansForSelectedDay();
+    loadSnapshot();loadQuest();
+  }catch(err){console.warn('post-save refresh',err);}
 }
 
 function fabAction(){const ap=document.querySelector('.page.active').dataset.page;if(ap==='home'){openPlanModal(null);return;}if(ap==='goals'){let pk;if(State.goalPeriod==='yearly')pk=String(State.selectedYear);else if(State.goalPeriod==='monthly')pk=State.selectedYear+'-'+pad(State.selectedMonth+1);else if(State.goalPeriod==='weekly')pk=weekKey(addDays(new Date(),State.weekOffset*7));else pk=ymd(State.selectedDate);openModal(State.goalPeriod,pk);return;}}

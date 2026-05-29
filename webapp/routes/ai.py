@@ -6,7 +6,7 @@ holatini ko'rib, shundan kelib chiqib javob beradi va u bilan suhbatlashadi.
 Suhbatlar saqlanmaydi (ephemeral) — frontend tarixni o'zida yuritadi.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,11 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import TIMEZONE
 from bot.models.checkin import DailyCheckin
-from bot.models.plan import PlanStatus
+from bot.models.plan import Plan, PlanStatus
 from bot.services.ai_service import chat_with_coach
 from bot.services.gamification_service import build_user_snapshot
 from bot.services.goal_service import get_user_goals
-from bot.services.plan_service import get_today_plans
 from bot.services.premium_service import check_and_consume_ai, user_is_premium
 from bot.services.user_service import get_user_by_telegram_id
 from database.db import AsyncSessionLocal
@@ -57,76 +56,119 @@ GOAL_TYPE_UZ = {
     "daily": "Kunlik",
 }
 
+UZ_WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"]
+
 
 async def _build_context(session: AsyncSession, user) -> str:
-    """Foydalanuvchining joriy holatini AI uchun matn blokiga jamlaydi."""
+    """
+    Foydalanuvchining to'liq holatini AI uchun matn blokiga jamlaydi:
+      • Daraja / XP / streak / discipline score
+      • BARCHA maqsadlar (tur bo'yicha, bajarilgan/bajarilmagan)
+      • Oxirgi 7 kunlik rejalar ro'yxati (kun bo'yicha, holati bilan)
+      • Oxirgi 7 kunlik kayfiyat va energiya darajasi
+    """
     snap = await build_user_snapshot(session, user)
     goals = await get_user_goals(session, user)
-    today_plans = await get_today_plans(session, user)
 
     today = datetime.now(TIMEZONE).date()
-    res = await session.execute(
-        select(DailyCheckin).where(
-            and_(DailyCheckin.user_id == user.id, DailyCheckin.checkin_date == today)
-        )
+    week_ago = today - timedelta(days=6)
+
+    # Oxirgi 7 kunlik rejalar
+    res_plans = await session.execute(
+        select(Plan).where(
+            and_(
+                Plan.user_id == user.id,
+                Plan.plan_date >= week_ago,
+                Plan.plan_date <= today,
+            )
+        ).order_by(Plan.plan_date, Plan.scheduled_time)
     )
-    checkin = res.scalar_one_or_none()
+    week_plans = res_plans.scalars().all()
+
+    # Oxirgi 7 kunlik check-in (kayfiyat/energiya)
+    res_chk = await session.execute(
+        select(DailyCheckin).where(
+            and_(
+                DailyCheckin.user_id == user.id,
+                DailyCheckin.checkin_date >= week_ago,
+                DailyCheckin.checkin_date <= today,
+            )
+        ).order_by(DailyCheckin.checkin_date)
+    )
+    week_checkins = res_chk.scalars().all()
 
     lines = []
     name = (user.full_name or "").split(" ")[0] or "Do'st"
-    lines.append(f"Ism: {name}")
+    lines.append(f"FOYDALANUVCHI ISMI: {name}")
     lines.append(
-        f"Daraja: {snap.get('level', 1)} | XP: {snap.get('xp', 0)} | "
-        f"Streak: {snap.get('streak', 0)} kun (rekord: {user.longest_streak or 0}) | "
-        f"Discipline score: {snap.get('discipline_score', 50)}/100"
+        f"PROGRESS: Daraja {snap.get('level', 1)} | {snap.get('xp', 0)} XP | "
+        f"Streak {snap.get('streak', 0)} kun (rekord {user.longest_streak or 0}) | "
+        f"Discipline score {snap.get('discipline_score', 50)}/100"
     )
     lines.append(
-        f"Bugungi rejalar: {snap.get('today_done', 0)}/{snap.get('today_total', 0)} bajarildi"
+        f"BUGUN: {snap.get('today_done', 0)}/{snap.get('today_total', 0)} reja bajarildi | "
+        f"Premium: {'ha' if user_is_premium(user) else 'yoq (bepul)'}"
     )
-    lines.append(f"Premium: {'ha' if user_is_premium(user) else 'bepul (premium emas)'}")
 
-    # Bugungi rejalar ro'yxati
-    if today_plans:
-        plan_lines = []
-        for p in today_plans[:15]:
-            mark = "✅" if p.status == PlanStatus.done else "⬜️"
-            t = f" ({p.scheduled_time})" if p.scheduled_time else ""
-            plan_lines.append(f"  {mark} {p.title}{t}")
-        lines.append("Bugungi rejalar ro'yxati:\n" + "\n".join(plan_lines))
-    else:
-        lines.append("Bugungi rejalar ro'yxati: bo'sh")
-
-    # Maqsadlar (tur bo'yicha)
+    # ── BARCHA MAQSADLAR ─────────────────────────────────────
+    lines.append("\n=== BARCHA MAQSADLAR ===")
     if goals:
         by_type: dict[str, list] = {}
         for g in goals:
             by_type.setdefault(g.goal_type, []).append(g)
-        goal_lines = []
         for gtype in ("yearly", "monthly", "weekly", "daily"):
             items = by_type.get(gtype, [])
             if not items:
                 continue
             done = sum(1 for g in items if g.completed)
-            titles = ", ".join(g.title for g in items[:6] if not g.completed)
             label = GOAL_TYPE_UZ.get(gtype, gtype)
-            line = f"  {label}: {done}/{len(items)} bajarildi"
-            if titles:
-                line += f" | faol: {titles}"
-            goal_lines.append(line)
-        if goal_lines:
-            lines.append("Maqsadlar:\n" + "\n".join(goal_lines))
+            lines.append(f"{label} ({done}/{len(items)} bajarilgan):")
+            for g in items[:20]:
+                mark = "✅ bajarilgan" if g.completed else "⬜️ jarayonda"
+                extra = f" — {g.description}" if getattr(g, "description", None) else ""
+                period = f" [{g.period}]" if getattr(g, "period", None) else ""
+                lines.append(f"  • {g.title}{period} — {mark}{extra}")
     else:
-        lines.append("Maqsadlar: hali qo'shilmagan")
+        lines.append("Hali maqsad qo'shilmagan.")
 
-    # Bugungi kayfiyat / energiya
-    if checkin:
-        cl = []
-        if checkin.mood:
-            cl.append(f"kayfiyat {checkin.mood}")
-        if checkin.energy:
-            cl.append(f"energiya {checkin.energy}/5")
-        if cl:
-            lines.append("Bugungi holat: " + ", ".join(cl))
+    # ── OXIRGI 7 KUNLIK REJALAR ──────────────────────────────
+    lines.append("\n=== OXIRGI 7 KUNLIK REJALAR ===")
+    if week_plans:
+        by_date: dict = {}
+        for p in week_plans:
+            by_date.setdefault(p.plan_date, []).append(p)
+        for d in sorted(by_date.keys(), reverse=True):
+            wd = UZ_WEEKDAYS[d.weekday()]
+            day_plans = by_date[d]
+            done = sum(1 for p in day_plans if p.status == PlanStatus.done)
+            tag = " (BUGUN)" if d == today else ""
+            lines.append(f"{d.strftime('%d.%m')} {wd}{tag} — {done}/{len(day_plans)} bajarildi:")
+            for p in day_plans[:12]:
+                if p.status == PlanStatus.done:
+                    mark = "✅ bajarildi"
+                elif p.status == PlanStatus.failed:
+                    mark = "❌ bajarilmadi"
+                else:
+                    mark = "⬜️ kutilmoqda"
+                tm = f" {p.scheduled_time}" if p.scheduled_time else ""
+                lines.append(f"  • {p.title}{tm} — {mark}")
+    else:
+        lines.append("Oxirgi 7 kunda reja qo'shilmagan.")
+
+    # ── OXIRGI 7 KUNLIK KAYFIYAT / ENERGIYA ──────────────────
+    lines.append("\n=== OXIRGI 7 KUNLIK KAYFIYAT VA ENERGIYA ===")
+    if week_checkins:
+        for c in week_checkins:
+            wd = UZ_WEEKDAYS[c.checkin_date.weekday()]
+            parts = []
+            if c.mood:
+                parts.append(f"kayfiyat {c.mood}")
+            if c.energy:
+                parts.append(f"energiya {c.energy}/5")
+            if parts:
+                lines.append(f"  {c.checkin_date.strftime('%d.%m')} {wd}: " + ", ".join(parts))
+    else:
+        lines.append("Oxirgi 7 kunda kayfiyat belgilanmagan.")
 
     return "\n".join(lines)
 
