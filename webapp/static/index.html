@@ -515,6 +515,8 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .time-pick select{flex:1;padding:12px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:15px;font-weight:600;color:var(--text);font-family:inherit;text-align:center;text-align-last:center;cursor:pointer;outline:none;transition:border-color .25s,box-shadow .25s;-webkit-appearance:none;appearance:none}
 .time-pick select:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft)}
 .time-pick .tcolon{font-size:18px;font-weight:800;color:var(--text-2)}
+.time-pick select.field-error{border-color:var(--danger);box-shadow:0 0 0 4px rgba(239,68,68,.18);animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
 /* ── Home day strip (kun tanlash) ───────────────────────────────────────── */
 .day-strip{display:flex;flex-direction:row-reverse;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
@@ -531,18 +533,32 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .day-chip.active.has-dot::after{background:#fff}
 
 /* ── Profile subscription status ────────────────────────────────────────── */
-.sub-status{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:14px}
-.sub-status.premium{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 55%,#0f3460 100%);border-color:transparent;box-shadow:0 12px 30px rgba(15,52,96,.35)}
-.sub-status .ss-row{display:flex;align-items:center;gap:12px}
-.sub-status .ss-ic{width:46px;height:46px;border-radius:14px;background:var(--grad-soft);color:var(--primary);display:grid;place-items:center;font-size:24px;flex-shrink:0}
-.sub-status.premium .ss-ic{background:linear-gradient(135deg,#f5d76e,#d4a017);color:#1a1a2e;box-shadow:0 6px 16px rgba(245,215,110,.4)}
+.sub-status{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:14px;transition:transform .3s,box-shadow .3s}
+.sub-status.premium{background:linear-gradient(135deg,#1a1530 0%,#16213e 50%,#0f3460 100%);border-color:transparent;box-shadow:0 14px 36px rgba(15,52,96,.45)}
+/* premium kartada aylanuvchi yorug'lik */
+.sub-status.premium::before{content:'';position:absolute;inset:-60%;background:conic-gradient(from 0deg,transparent 0deg,rgba(245,215,110,.18) 60deg,transparent 140deg);animation:ssSpin 7s linear infinite;pointer-events:none}
+.sub-status.premium::after{content:'';position:absolute;top:-40%;right:-10%;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(245,215,110,.28),transparent 70%);pointer-events:none;animation:ssFloat 6s ease-in-out infinite}
+@keyframes ssSpin{to{transform:rotate(360deg)}}
+@keyframes ssFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(-14px,12px)}}
+.sub-status .ss-row{position:relative;z-index:1;display:flex;align-items:center;gap:13px}
+.sub-status .ss-ic{width:50px;height:50px;border-radius:16px;background:var(--grad-soft);color:var(--primary);display:grid;place-items:center;font-size:26px;flex-shrink:0}
+.sub-status.premium .ss-ic{background:linear-gradient(135deg,#f7e08a,#d4a017);color:#1a1530;box-shadow:0 6px 18px rgba(245,215,110,.5);animation:ssCrown 2.6s ease-in-out infinite}
+@keyframes ssCrown{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-3px) rotate(4deg)}}
 .sub-status .ss-body{flex:1;min-width:0}
-.sub-status .ss-ttl{font-size:14.5px;font-weight:800}
+.sub-status .ss-ttl{font-size:15.5px;font-weight:800;display:flex;align-items:center;gap:7px}
 .sub-status.premium .ss-ttl{color:#fff}
-.sub-status .ss-sub{font-size:12px;color:var(--text-2);margin-top:2px;line-height:1.4}
-.sub-status.premium .ss-sub{color:rgba(255,255,255,.78)}
-.sub-status .ss-cta{background:var(--grad);color:#fff;border:none;padding:10px 14px;border-radius:12px;font-weight:700;font-size:12.5px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;white-space:nowrap}
-.sub-status .ss-cta:active{transform:scale(.96)}
+/* "Premium faol" yonidagi jonli nuqta */
+.sub-status .ss-live{display:none;width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 0 0 rgba(74,222,128,.7);animation:ssPulse 1.8s infinite}
+.sub-status.premium .ss-live{display:inline-block}
+@keyframes ssPulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 7px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+.sub-status .ss-sub{font-size:12px;color:var(--text-2);margin-top:3px;line-height:1.45}
+.sub-status.premium .ss-sub{color:rgba(255,255,255,.82)}
+/* premium qolgan kunlar progress chizig'i */
+.sub-status .ss-bar{display:none;position:relative;z-index:1;height:6px;border-radius:999px;background:rgba(255,255,255,.16);margin-top:11px;overflow:hidden}
+.sub-status.premium .ss-bar{display:block}
+.sub-status .ss-bar>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#f7e08a,#f5d76e);box-shadow:0 0 10px rgba(245,215,110,.6);width:0;transition:width 1.1s cubic-bezier(.22,1,.36,1)}
+.sub-status .ss-cta{position:relative;z-index:1;background:var(--grad);color:#fff;border:none;padding:11px 15px;border-radius:13px;font-weight:800;font-size:12.5px;cursor:pointer;box-shadow:var(--glow);flex-shrink:0;white-space:nowrap;transition:transform .15s}
+.sub-status .ss-cta:active{transform:scale(.95)}
 
 </style>
 </head>
@@ -713,11 +729,12 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
   <div class="ss-row">
     <div class="ss-ic" id="ssIcon">💎</div>
     <div class="ss-body">
-      <div class="ss-ttl" id="ssTitle">Obuna holati</div>
+      <div class="ss-ttl"><span id="ssTitle">Obuna holati</span><span class="ss-live"></span></div>
       <div class="ss-sub" id="ssSub">Yuklanmoqda…</div>
     </div>
     <button class="ss-cta" id="ssCta" style="display:none">Obuna olish</button>
   </div>
+  <div class="ss-bar"><i id="ssBar"></i></div>
 </div>
 <div class="section-title"><h2>🎨 Tema</h2></div>
 <div class="theme-grid" id="themeGrid"></div>
@@ -806,7 +823,7 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 <div class="modal-back" id="planModalBack"><div class="modal"><div class="grab"></div><h3 id="planModalTitle">Yangi reja</h3>
 <div class="fld"><label>Sarlavha</label><input id="pTitle" placeholder="Masalan: Ertalabki yugurish"></div>
 <div class="fld"><label>Tavsif (ixtiyoriy)</label><textarea id="pDesc" placeholder="Qisqacha izoh..."></textarea></div>
-<div class="row gap-12"><div class="fld" style="flex:1"><label>Eslatma vaqti</label><div class="time-pick"><select id="pHour" aria-label="Soat"></select><span class="tcolon">:</span><select id="pMin" aria-label="Daqiqa"></select></div></div><div class="fld" style="flex:1"><label>Sana</label><input id="pDate" type="date"></div></div>
+<div class="row gap-12"><div class="fld" style="flex:1"><label>Eslatma vaqti <span style="color:var(--danger)">*</span></label><div class="time-pick"><select id="pHour" aria-label="Soat"></select><span class="tcolon">:</span><select id="pMin" aria-label="Daqiqa"></select></div></div><div class="fld" style="flex:1"><label>Sana</label><input id="pDate" type="date"></div></div>
 <div class="row gap-12 mt-8"><button class="btn btn-ghost" id="pCancel">Bekor</button><button class="btn" id="pSave">Saqlash</button></div></div></div>
 
 <div class="modal-back" id="dayModalBack"><div class="modal"><div class="grab"></div><h3 id="dayModalTitle">Kun maqsadlari</h3><div id="dayModalList"></div><div class="row gap-12 mt-8"><button class="btn btn-ghost" id="dayClose">Yopish</button><button class="btn" id="dayAdd">+ Qo'shish</button></div></div></div>
@@ -986,21 +1003,30 @@ function applyPremiumUI(s){
   const title=document.getElementById('ssTitle');
   const sub=document.getElementById('ssSub');
   const cta=document.getElementById('ssCta');
+  const bar=document.getElementById('ssBar');
   if(!box)return;
   if(s&&s.is_premium){
     box.classList.add('premium');
     if(icon)icon.textContent='👑';
     if(title)title.textContent='Premium faol';
     let until='';
-    if(s.premium_until){try{const d=new Date(s.premium_until);until=' • '+d.getDate()+' '+UZ_MONTHS_SHORT[d.getMonth()]+' '+d.getFullYear()+' gacha';}catch(_){}}
-    if(sub)sub.textContent=(s.plan_title?s.plan_title:'Obuna')+' • '+(s.days_left||0)+' kun qoldi'+until;
+    if(s.premium_until){try{const d=new Date(s.premium_until);until=d.getDate()+' '+UZ_MONTHS_SHORT[d.getMonth()]+' '+d.getFullYear();}catch(_){}}
+    const dl=s.days_left||0;
+    if(sub)sub.textContent=(s.plan_title?s.plan_title:'Obuna')+' · '+dl+' kun qoldi'+(until?' · '+until+' gacha':'');
     if(cta)cta.style.display='none';
+    // progress: qolgan kun / tarif umumiy kuni
+    if(bar){
+      const totalDays={'1 oylik':30,'3 oylik':90,'6 oylik':180,'1 yillik':365}[s.plan_title]||30;
+      const pct=Math.max(4,Math.min(100,Math.round(dl*100/totalDays)));
+      setTimeout(()=>{bar.style.width=pct+'%';},150);
+    }
   }else{
     box.classList.remove('premium');
     if(icon)icon.textContent='🆓';
     if(title)title.textContent='Bepul rejim';
     if(sub)sub.textContent='Mini App imkoniyatlari cheklangan. Premium bilan to\'liq foydalaning.';
     if(cta){cta.style.display='';cta.textContent='💎 Obuna olish';}
+    if(bar)bar.style.width='0%';
   }
 }
 async function loadSubscription(){
@@ -1152,7 +1178,13 @@ async function savePlanModal(){
   const desc=(document.getElementById('pDesc')?.value||'').trim();
   const hh=document.getElementById('pHour')?.value||'';
   const mm=document.getElementById('pMin')?.value||'00';
-  const tm=hh?(hh+':'+mm):null;
+  if(!hh){
+    toast('⏰ Iltimos, eslatma vaqtini belgilang',true);
+    const hSel=document.getElementById('pHour');
+    if(hSel){hSel.classList.add('field-error');hSel.focus();try{hSel.scrollIntoView({block:'center',behavior:'smooth'});}catch(_){}setTimeout(()=>hSel.classList.remove('field-error'),1600);}
+    return;
+  }
+  const tm=hh+':'+mm;
   const dt=document.getElementById('pDate')?.value||ymd(State.selectedDate||new Date());
   const body={title:t,description:desc||null,scheduled_time:tm,plan_date:dt};
   const isEdit=!!State.planModal.id;

@@ -321,34 +321,44 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
             "Administrator bilan bog'laning."
         )
     try:
-        messages = [
-            {"role": "system", "content": COACH_PERSONA},
-            {
-                "role": "system",
-                "content": (
-                    "═══ FOYDALANUVCHI MA'LUMOTLARI (REAL, JONLI DB'DAN) ═══\n"
-                    "Quyidagi ma'lumot — foydalanuvchining haqiqiy holati. "
-                    "Javobingni AYNAN shu ma'lumotga asoslab, psixolog kabi tahlil qilib ber. "
-                    "Bu ma'lumotni ko'rib turibsan, undan dadil foydalanib aniq misollar keltir:\n\n"
-                    + context_block +
-                    "\n═══════════════════════════════════════════════"
-                ),
-            },
-        ]
-        # Faqat oxirgi 12 ta xabarni olamiz (xarajat nazorati)
+        # Tarix (oxirgi 12 ta xabar)
+        convo = []
         for m in history[-12:]:
             role = m.get("role")
             content = (m.get("content") or "").strip()
             if role in ("user", "assistant") and content:
-                messages.append({"role": role, "content": content[:1500]})
+                convo.append({"role": role, "content": content[:1500]})
 
-        if len(messages) <= 2:
+        if not convo:
             return "Salom! Men Intizom AI murabbiyingman 🌱 Bugun nima ustida ishlaymiz?"
+
+        context_msg = {
+            "role": "system",
+            "content": (
+                "═══ FOYDALANUVCHI MA'LUMOTLARI (REAL, JONLI DB'DAN) ═══\n"
+                "Quyida foydalanuvchining HOZIRGI haqiqiy holati — maqsadlari, oxirgi 7 kunlik "
+                "rejalari va kayfiyati. Bu ma'lumotni sen TO'LIQ ko'rib turibsan. "
+                "Pastdagi savolga AYNAN shu ma'lumotga asoslanib, psixolog kabi tahlil qilib, "
+                "aniq nom va raqamlar bilan javob ber. \"Ma'lumot yo'q\" deyish QAT'IY TAQIQLANADI:\n\n"
+                + context_block +
+                "\n═══════════════════════════════════════════════"
+            ),
+        }
+
+        # Persona — eng boshida. Kontekst — oxirgi user xabaridan OLDIN (recency = kuchli e'tibor).
+        messages = [{"role": "system", "content": COACH_PERSONA}]
+        if len(convo) == 1:
+            messages.append(context_msg)
+            messages.extend(convo)
+        else:
+            messages.extend(convo[:-1])
+            messages.append(context_msg)
+            messages.append(convo[-1])
 
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.7,
+            temperature=0.6,
             max_tokens=450,
         )
         reply = (response.choices[0].message.content or "").strip()
