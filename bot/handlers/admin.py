@@ -14,7 +14,8 @@ from bot.services.user_service import get_user_by_telegram_id
 from bot.keyboards.admin_keys import (
     admin_main_keyboard, admin_users_keyboard,
     admin_users_list_keyboard, admin_admins_keyboard,
-    back_to_admin_keyboard, back_to_users_keyboard
+    back_to_admin_keyboard, back_to_users_keyboard,
+    admin_premium_keyboard, back_to_premium_keyboard,
 )
 
 router = Router()
@@ -27,6 +28,10 @@ class AdminState(StatesGroup):
     broadcast_choosing = State()      # Umumiy yoki ID
     broadcast_waiting_id = State()    # ID kutish
     broadcast_waiting_text = State()  # Xabar matni kutish
+    # Premium
+    premium_grant = State()           # "ID plan" kutish
+    premium_revoke = State()          # ID kutish
+    promo_create = State()            # promokod yaratish
 
 
 def broadcast_type_keyboard():
@@ -566,3 +571,274 @@ async def broadcast_send_confirmed(callback: CallbackQuery, state: FSMContext, s
         )
 
     await callback.answer()
+
+
+
+# ===================== PREMIUM / OBUNA =====================
+
+@router.callback_query(F.data == "admin_premium")
+async def admin_premium(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, callback.from_user.id):
+        await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
+        return
+    await state.clear()
+    await callback.message.edit_text(
+        "💎 <b>Premium boshqaruvi</b>\n\nNima qilamiz?",
+        parse_mode="HTML",
+        reply_markup=admin_premium_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_premium_stats")
+async def admin_premium_stats(callback: CallbackQuery, session: AsyncSession):
+    if not await is_admin(session, callback.from_user.id):
+        await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
+        return
+
+    from sqlalchemy import select, func
+    from bot.models.subscription import Subscription
+    from bot.services.premium_service import get_premium_count
+    from bot.services.admin_service import get_users_count
+    from bot.config import SUBSCRIPTION_PLANS
+
+    premium_count = await get_premium_count(session)
+    total_users = await get_users_count(session)
+    total_subs = await session.scalar(select(func.count(Subscription.id))) or 0
+
+    # Faol obunalar tarif bo'yicha + taxminiy daromad
+    rows = (await session.execute(
+        select(Subscription).where(Subscription.is_active == True)  # noqa: E712
+    )).scalars().all()
+    by_plan = {}
+    revenue = 0
+    for s in rows:
+        by_plan[s.plan] = by_plan.get(s.plan, 0) + 1
+        revenue += s.price or 0
+
+    plan_lines = ""
+    for key, p in SUBSCRIPTION_PLANS.items():
+        plan_lines += f"  • {p['title']}: <b>{by_plan.get(key, 0)} ta</b>\n"
+
+    rev_str = f"{revenue:,}".replace(",", " ")
+
+    text = (
+        "📊 <b>Obuna statistikasi</b>\n\n"
+        f"💎 Premium foydalanuvchilar: <b>{premium_count} ta</b>\n"
+        f"🆓 Bepul foydalanuvchilar: <b>{max(0, total_users - premium_count)} ta</b>\n"
+        f"👥 Jami: <b>{total_users} ta</b>\n\n"
+        f"━━━━━━━━━━━━━━━\n"
+        f"🧾 Jami obunalar (tarix): <b>{total_subs} ta</b>\n"
+        f"📦 <b>Faol obunalar (tarif):</b>\n{plan_lines}\n"
+        f"💰 Taxminiy daromad (faol): <b>{rev_str} so'm</b>"
+    )
+    await callback.message.edit_text(
+        text, parse_mode="HTML", reply_markup=back_to_premium_keyboard()
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_premium_grant")
+async def admin_premium_grant_start(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, callback.from_user.id):
+        await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
+        return
+    await callback.message.edit_text(
+        "➕ <b>Premium berish</b>\n\n"
+        "Telegram ID va tarifni yuboring.\n"
+        "Format: <code>ID tarif</code>\n\n"
+        "Tariflar: <code>1m</code> / <code>3m</code> / <code>6m</code> / <code>12m</code>\n"
+        "Masalan: <code>123456789 3m</code>",
+        parse_mode="HTML",
+        reply_markup=back_to_premium_keyboard(),
+    )
+    await state.set_state(AdminState.premium_grant)
+    await callback.answer()
+
+
+@router.message(AdminState.premium_grant)
+async def admin_premium_grant_process(message: Message, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, message.from_user.id):
+        return
+
+    parts = (message.text or "").split()
+    if len(parts) < 2:
+        await message.answer(
+            "❌ Format noto'g'ri. Masalan: <code>123456789 3m</code>",
+            parse_mode="HTML",
+        )
+        return
+
+    from bot.config import SUBSCRIPTION_PLANS
+    from bot.services.user_service import get_user_by_telegram_id
+    from bot.services.premium_service import activate_subscription
+
+    try:
+        target_id = int(parts[0])
+    except ValueError:
+        await message.answer("❌ ID raqam bo'lishi kerak.")
+        return
+
+    plan_key = parts[1].strip().lower()
+    if plan_key not in SUBSCRIPTION_PLANS:
+        await message.answer(
+            "❌ Noma'lum tarif. 1m / 3m / 6m / 12m dan birini yozing."
+        )
+        return
+
+    user = await get_user_by_telegram_id(session, target_id)
+    if not user:
+        await message.answer(
+            "❌ Bu ID da foydalanuvchi topilmadi (avval botda /start bosishi kerak).",
+            reply_markup=back_to_premium_keyboard(),
+        )
+        await state.clear()
+        return
+
+    sub = await activate_subscription(
+        session, user, plan_key=plan_key, source="admin",
+    )
+    await state.clear()
+
+    plan = SUBSCRIPTION_PLANS[plan_key]
+    await message.answer(
+        f"✅ <b>Premium berildi!</b>\n\n"
+        f"👤 ID: <b>{target_id}</b>\n"
+        f"📦 Tarif: <b>{plan['title']}</b>\n"
+        f"📅 Tugaydi: <b>{sub.expires_at.strftime('%d.%m.%Y')}</b>",
+        parse_mode="HTML",
+        reply_markup=back_to_premium_keyboard(),
+    )
+
+    # Foydalanuvchini xabardor qilamiz
+    try:
+        await message.bot.send_message(
+            chat_id=target_id,
+            text=(
+                "🎉 <b>Sizga Premium berildi!</b>\n\n"
+                f"📦 Tarif: <b>{plan['title']}</b>\n"
+                f"📅 Amal qiladi: <b>{sub.expires_at.strftime('%d.%m.%Y')} gacha</b>\n\n"
+                "✨ Endi Mini App va barcha imkoniyatlar ochiq!"
+            ),
+            parse_mode="HTML",
+        )
+    except Exception:
+        pass
+
+
+@router.callback_query(F.data == "admin_premium_revoke")
+async def admin_premium_revoke_start(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, callback.from_user.id):
+        await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
+        return
+    await callback.message.edit_text(
+        "➖ <b>Premium olib tashlash</b>\n\n"
+        "Foydalanuvchining Telegram ID sini yuboring:",
+        parse_mode="HTML",
+        reply_markup=back_to_premium_keyboard(),
+    )
+    await state.set_state(AdminState.premium_revoke)
+    await callback.answer()
+
+
+@router.message(AdminState.premium_revoke)
+async def admin_premium_revoke_process(message: Message, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, message.from_user.id):
+        return
+    try:
+        target_id = int((message.text or "").strip())
+    except ValueError:
+        await message.answer("❌ ID raqam bo'lishi kerak.")
+        return
+
+    from bot.services.user_service import get_user_by_telegram_id
+    from bot.services.premium_service import revoke_premium
+
+    user = await get_user_by_telegram_id(session, target_id)
+    if not user:
+        await message.answer(
+            "❌ Foydalanuvchi topilmadi.",
+            reply_markup=back_to_premium_keyboard(),
+        )
+        await state.clear()
+        return
+
+    await revoke_premium(session, user)
+    await state.clear()
+    await message.answer(
+        f"✅ Premium olib tashlandi (ID: {target_id}).",
+        reply_markup=back_to_premium_keyboard(),
+    )
+
+
+@router.callback_query(F.data == "admin_promo_create")
+async def admin_promo_create_start(callback: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, callback.from_user.id):
+        await callback.answer("❌ Ruxsat yo'q!", show_alert=True)
+        return
+    await callback.message.edit_text(
+        "🎟 <b>Promokod yaratish</b>\n\n"
+        "Format: <code>KOD tarif max_uses</code>\n\n"
+        "• <b>tarif</b>: 1m/3m/6m/12m yoki <code>-</code> (foydalanuvchi tanlovi)\n"
+        "• <b>max_uses</b>: 0 = cheksiz\n\n"
+        "Masalan: <code>YANGI2026 1m 100</code>\n"
+        "Yoki: <code>SOVGA - 0</code>",
+        parse_mode="HTML",
+        reply_markup=back_to_premium_keyboard(),
+    )
+    await state.set_state(AdminState.promo_create)
+    await callback.answer()
+
+
+@router.message(AdminState.promo_create)
+async def admin_promo_create_process(message: Message, state: FSMContext, session: AsyncSession):
+    if not await is_admin(session, message.from_user.id):
+        return
+
+    parts = (message.text or "").split()
+    if not parts:
+        await message.answer("❌ Bo'sh. Format: <code>KOD tarif max_uses</code>", parse_mode="HTML")
+        return
+
+    from bot.config import SUBSCRIPTION_PLANS
+    from bot.services.premium_service import create_promocode
+
+    code = parts[0].strip()
+    plan = None
+    max_uses = 0
+    if len(parts) >= 2 and parts[1] != "-":
+        if parts[1].lower() in SUBSCRIPTION_PLANS:
+            plan = parts[1].lower()
+        else:
+            await message.answer("❌ Noma'lum tarif. 1m/3m/6m/12m yoki '-' yozing.")
+            return
+    if len(parts) >= 3:
+        try:
+            max_uses = int(parts[2])
+        except ValueError:
+            max_uses = 0
+
+    promo = await create_promocode(
+        session, code=code, plan=plan, max_uses=max_uses,
+        created_by=message.from_user.id,
+    )
+    await state.clear()
+
+    if not promo:
+        await message.answer(
+            f"⚠️ <code>{code}</code> allaqachon mavjud.",
+            parse_mode="HTML",
+            reply_markup=back_to_premium_keyboard(),
+        )
+        return
+
+    plan_label = SUBSCRIPTION_PLANS[plan]["title"] if plan else "Foydalanuvchi tanlovi"
+    uses_label = "cheksiz" if max_uses == 0 else f"{max_uses} marta"
+    await message.answer(
+        f"✅ <b>Promokod yaratildi!</b>\n\n"
+        f"🎟 Kod: <code>{promo.code}</code>\n"
+        f"📦 Tarif: <b>{plan_label}</b>\n"
+        f"🔢 Limit: <b>{uses_label}</b>",
+        parse_mode="HTML",
+        reply_markup=back_to_premium_keyboard(),
+    )

@@ -451,7 +451,7 @@ async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
         "discipline_score": user.discipline_score or 50,
         "rank_title": title,
         "rank_emoji": emoji,
-        "is_premium": bool(user.is_premium),
+        "is_premium": bool(user.premium_until and user.premium_until > datetime.utcnow()),
         "perfect_days": user.perfect_days or 0,
         "today_done": today_done,
         "today_total": today_total,

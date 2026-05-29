@@ -32,3 +32,27 @@ SUMMARY_MINUTE = 59
 # Pending check vaqti (Tashkent vaqti)
 PENDING_CHECK_HOUR = 23
 PENDING_CHECK_MINUTE = 0
+
+# ─────────────────────────────────────────────────────────────
+#  MONETIZATSIYA / OBUNA
+# ─────────────────────────────────────────────────────────────
+# Sinov bosqichidagi promokod — shu matn yuborilsa obuna faollashadi.
+# Kelajakda karta to'lovi qo'shilganda shu joy o'zgartiriladi.
+PROMO_CODE = os.getenv("PROMO_CODE", "intizom").strip()
+
+# Mini App (WebApp) URL — bot/handlers/start.py va paywall uchun.
+WEBAPP_URL = os.getenv("WEBAPP_URL", "").strip()
+
+# Free (bepul) foydalanuvchi uchun kunlik reja limiti.
+FREE_DAILY_PLAN_LIMIT = int(os.getenv("FREE_DAILY_PLAN_LIMIT", 5))
+
+# Obuna planlari: kalit -> (nom, davomiylik kun, narx so'mda).
+SUBSCRIPTION_PLANS = {
+    "1m":  {"title": "1 oylik",  "days": 30,  "price": 9900},
+    "3m":  {"title": "3 oylik",  "days": 90,  "price": 26900},
+    "6m":  {"title": "6 oylik",  "days": 180, "price": 49900},
+    "12m": {"title": "1 yillik", "days": 365, "price": 89900},
+}
+
+# Obuna tugashidan necha kun oldin eslatma yuborilsin.
+PREMIUM_EXPIRY_REMINDER_DAYS = [3, 1]

@@ -8,11 +8,38 @@ def admin_main_keyboard() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🛡 Adminlar", callback_data="admin_admins"),
         ],
         [
+            InlineKeyboardButton(text="💎 Premium", callback_data="admin_premium"),
+        ],
+        [
             InlineKeyboardButton(text="📢 Xabar yuborish", callback_data="admin_broadcast"),
         ],
         [
             InlineKeyboardButton(text="🚪 Chiqish", callback_data="home"),
         ]
+    ])
+
+
+def admin_premium_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="➕ Premium berish", callback_data="admin_premium_grant"),
+            InlineKeyboardButton(text="➖ Premium olib tashlash", callback_data="admin_premium_revoke"),
+        ],
+        [
+            InlineKeyboardButton(text="📊 Obuna statistikasi", callback_data="admin_premium_stats"),
+        ],
+        [
+            InlineKeyboardButton(text="🎟 Promokod yaratish", callback_data="admin_promo_create"),
+        ],
+        [
+            InlineKeyboardButton(text="🔙 Orqaga", callback_data="admin_panel"),
+        ]
+    ])
+
+
+def back_to_premium_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔙 Orqaga", callback_data="admin_premium")]
     ])
 
 

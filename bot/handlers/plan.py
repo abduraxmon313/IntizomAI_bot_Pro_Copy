@@ -216,7 +216,7 @@ async def handle_voice_for_time(message: Message, state: FSMContext):
 # ─────────────────────────────────────────
 
 @router.message(F.text & ~F.text.startswith("/") & ~F.text.in_({
-    "📊 Mening statusim", "📋 Rejalarim", "📈 Hisobot", "➕ Reja qo'shish"
+    "📊 Mening statusim", "📋 Rejalarim", "📈 Hisobot", "➕ Reja qo'shish", "💎 Obuna"
 }))
 async def handle_text_any(message: Message, state: FSMContext, session: AsyncSession):
     current_state = await state.get_state()
@@ -313,6 +313,25 @@ async def confirm_plans_handler(callback: CallbackQuery, state: FSMContext, sess
     plans_data = data.get("plans", [])
 
     user = await get_user_by_telegram_id(session, callback.from_user.id)
+
+    # ── Free-tier kunlik limit tekshiruvi ───────────────────────────
+    from bot.services.premium_service import check_plan_limit
+    from bot.keyboards.subscribe_keys import buy_subscription_keyboard
+
+    limit = await check_plan_limit(session, user, adding=len(plans_data))
+    if not limit.allowed:
+        await state.clear()
+        await callback.message.edit_text(
+            "🔒 <b>Kunlik bepul limit tugadi</b>\n\n"
+            f"Bepul rejimda kuniga <b>{limit.limit} tagacha</b> reja qo'shish mumkin.\n"
+            f"Bugun ishlatilgan: <b>{limit.used}/{limit.limit}</b>\n\n"
+            "💎 <b>Premium</b> bilan cheksiz reja, Mini App va boshqa imkoniyatlar ochiladi.",
+            parse_mode="HTML",
+            reply_markup=buy_subscription_keyboard(),
+        )
+        await callback.answer("Bepul limit tugadi", show_alert=True)
+        return
+
     await create_plans(session, user, plans_data)
     await state.clear()
 

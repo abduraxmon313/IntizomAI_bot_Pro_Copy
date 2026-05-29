@@ -5,8 +5,9 @@ from .admin import Admin
 from .goal import Goal
 from .achievement import Achievement
 from .checkin import DailyCheckin
+from .subscription import Subscription, Promocode
 
 __all__ = [
     "User", "Plan", "PlanStatus", "ScoreLog", "Admin", "Goal",
-    "Achievement", "DailyCheckin",
+    "Achievement", "DailyCheckin", "Subscription", "Promocode",
 ]

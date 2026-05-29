@@ -15,6 +15,7 @@ from bot.keyboards.main_menu import main_menu_keyboard
 from bot.keyboards.reply_keys import main_reply_keyboard
 from bot.services.gamification_service import xp_progress, rank_for_level
 from bot.services.user_service import get_or_create_user, get_user_by_telegram_id
+from bot.services.premium_service import user_is_premium, days_left
 
 router = Router()
 
@@ -22,15 +23,19 @@ router = Router()
 WEBAPP_URL = os.getenv("WEBAPP_URL", "").strip()
 
 
-def _webapp_kb() -> InlineKeyboardMarkup | None:
-    if not WEBAPP_URL:
-        return None
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
+def _webapp_kb(is_premium: bool) -> InlineKeyboardMarkup | None:
+    rows = []
+    if WEBAPP_URL:
+        rows.append([InlineKeyboardButton(
             text="✨ Mini App ochish",
             web_app=WebAppInfo(url=WEBAPP_URL),
-        )]
-    ])
+        )])
+    if not is_premium:
+        rows.append([InlineKeyboardButton(
+            text="💎 Obuna sotib olish",
+            callback_data="open_subscription",
+        )])
+    return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 
 @router.message(CommandStart())
@@ -77,10 +82,22 @@ async def start_handler(message: Message, session: AsyncSession):
         reply_markup=main_reply_keyboard(),
     )
 
-    webapp_kb = _webapp_kb()
+    is_premium = user_is_premium(user)
+    webapp_kb = _webapp_kb(is_premium)
     if webapp_kb:
+        if is_premium:
+            promo_text = (
+                "🚀 <b>Mini App</b> — kalendar, statistika, AI coach.\n"
+                f"💎 Premium faol — {days_left(user)} kun qoldi."
+            )
+        else:
+            promo_text = (
+                "🚀 <b>Mini App</b> — kalendar, statistika, AI coach.\n\n"
+                "🔒 Mini App <b>Premium</b> imkoniyat. Ochish uchun obuna kerak.\n"
+                "Tugmani bossangiz, Mini App ichida obuna haqida ma'lumot chiqadi."
+            )
         await message.answer(
-            "🚀 <b>Mini App</b> — kalendar, statistika, AI coach.",
+            promo_text,
             parse_mode="HTML",
             reply_markup=webapp_kb,
         )
