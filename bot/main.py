@@ -6,7 +6,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import BotCommand
 
 from bot.config import BOT_TOKEN
-from bot.handlers import start, plan, callback, report, admin, status
+from bot.handlers import start, plan, callback, report, admin, status, subscribe
 from bot.services.scheduler import start_scheduler
 from database.db import create_tables
 
@@ -56,6 +56,7 @@ async def main():
     dp.include_router(start.router)
     dp.include_router(status.router)
     dp.include_router(admin.router)
+    dp.include_router(subscribe.router)
     dp.include_router(plan.router)
     dp.include_router(callback.router)
     dp.include_router(report.router)

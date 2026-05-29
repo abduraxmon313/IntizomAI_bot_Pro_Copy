@@ -11,7 +11,10 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
             [
                 KeyboardButton(text="📈 Hisobot"),
                 KeyboardButton(text="➕ Reja qo'shish"),
-            ]
+            ],
+            [
+                KeyboardButton(text="💎 Obuna"),
+            ],
         ],
         resize_keyboard=True,
         persistent=True

@@ -17,11 +17,13 @@ from sqlalchemy import and_, select
 from bot.config import (
     PENDING_CHECK_HOUR,
     PENDING_CHECK_MINUTE,
+    PREMIUM_EXPIRY_REMINDER_DAYS,
     SUMMARY_HOUR,
     SUMMARY_MINUTE,
     TIMEZONE,
 )
 from bot.models.plan import Plan, PlanStatus
+from bot.models.subscription import Subscription
 from bot.models.user import User
 from bot.services.coach_service import (
     message_for_comeback,
@@ -29,6 +31,7 @@ from bot.services.coach_service import (
     message_for_morning,
     message_for_streak_warning,
 )
+from bot.services.premium_service import days_left, get_expired_premium_users
 from database.db import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
@@ -283,6 +286,78 @@ async def check_pending_plans(bot):
 
 
 # ─────────────────────────────────────────────────────────────
+async def downgrade_expired_premium(bot):
+    """09:30 — muddati tugagan premiumlarni bepulga o'tkazadi va xabar beradi."""
+    async with AsyncSessionLocal() as session:
+        users = await get_expired_premium_users(session)
+        for user in users:
+            user.is_premium = False
+            subs = (await session.execute(
+                select(Subscription).where(
+                    and_(
+                        Subscription.user_id == user.id,
+                        Subscription.is_active == True,  # noqa: E712
+                    )
+                )
+            )).scalars().all()
+            for s in subs:
+                s.is_active = False
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                continue
+
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💎 Obunani yangilash", callback_data="open_subscription")],
+            ])
+            try:
+                await bot.send_message(
+                    user.telegram_id,
+                    "⌛️ <b>Premium obunangiz tugadi.</b>\n\n"
+                    "Mini App va cheksiz imkoniyatlar yopildi.\n"
+                    "Streakingizni va natijalaringizni yo'qotmaslik uchun "
+                    "obunani yangilang 👇",
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Downgrade notify skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+async def premium_expiry_reminder(bot):
+    """10:30 — obuna tugashiga 3 va 1 kun qolganda eslatma."""
+    async with AsyncSessionLocal() as session:
+        now = datetime.utcnow()
+        users = (await session.execute(
+            select(User).where(
+                and_(
+                    User.premium_until != None,  # noqa: E711
+                    User.premium_until > now,
+                )
+            )
+        )).scalars().all()
+
+        for user in users:
+            left = days_left(user)
+            if left not in PREMIUM_EXPIRY_REMINDER_DAYS:
+                continue
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💎 Obunani uzaytirish", callback_data="open_subscription")],
+            ])
+            try:
+                await bot.send_message(
+                    user.telegram_id,
+                    f"⏳ <b>Premium obunangizga {left} kun qoldi.</b>\n\n"
+                    "Uzluksiz davom etish uchun obunani oldindan uzaytiring — "
+                    "shunda qolgan kunlar yo'qolmaydi 👇",
+                    parse_mode="HTML", reply_markup=kb,
+                )
+            except Exception as e:
+                logger.debug(f"Expiry reminder skip {user.telegram_id}: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
 def start_scheduler(bot):
     tz = str(TIMEZONE)
 
@@ -331,5 +406,17 @@ def start_scheduler(bot):
             hour=SUMMARY_HOUR, minute=SUMMARY_MINUTE, timezone=tz,
         ),
         args=[bot], id="daily_summary",
+    )
+    # 09:30 — muddati tugagan premiumlarni downgrade qilish
+    scheduler.add_job(
+        downgrade_expired_premium,
+        trigger=CronTrigger(hour=9, minute=30, timezone=tz),
+        args=[bot], id="downgrade_expired_premium",
+    )
+    # 10:30 — premium tugashi haqida eslatma
+    scheduler.add_job(
+        premium_expiry_reminder,
+        trigger=CronTrigger(hour=10, minute=30, timezone=tz),
+        args=[bot], id="premium_expiry_reminder",
     )
     scheduler.start()

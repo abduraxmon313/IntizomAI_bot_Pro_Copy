@@ -110,6 +110,19 @@ async def add_plan(
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    # Free-tier kunlik limit (premium foydalanuvchilarga cheksiz)
+    from bot.services.premium_service import check_plan_limit
+    limit = await check_plan_limit(session, user, adding=1)
+    if not limit.allowed:
+        raise HTTPException(
+            status_code=402,
+            detail=(
+                f"Bepul kunlik limit tugadi ({limit.used}/{limit.limit}). "
+                "Cheksiz reja uchun Premium oling."
+            ),
+        )
+
     plan = await create_plan_single(
         session, user,
         title=body.title,

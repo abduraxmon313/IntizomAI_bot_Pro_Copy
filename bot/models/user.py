@@ -43,3 +43,4 @@ class User(Base):
     goals = relationship("Goal", back_populates="user", cascade="all, delete")
     achievements = relationship("Achievement", back_populates="user", cascade="all, delete")
     checkins = relationship("DailyCheckin", back_populates="user", cascade="all, delete")
+    subscriptions = relationship("Subscription", back_populates="user", cascade="all, delete")
