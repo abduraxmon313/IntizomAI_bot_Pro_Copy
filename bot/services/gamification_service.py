@@ -409,9 +409,78 @@ async def reward_completion(
 
 
 # ─────────────────────────────────────────────────────────────
+#  BACKFILL — eski (gamification'dan oldingi) aktivlikni tiklash
+# ─────────────────────────────────────────────────────────────
+async def _backfill_user_stats(session: AsyncSession, user: User) -> None:
+    """
+    Agar foydalanuvchining bajarilgan rejalari bo'lsa-yu, lekin XP hali
+    hisoblanmagan bo'lsa (0), mavjud bajarilgan rejalardan XP, daraja,
+    total_score, streak va discipline score'ni qayta tiklaydi.
+
+    Bu faqat bir marta ishlaydi (XP > 0 bo'lgach qayta hisoblamaydi),
+    shuning uchun har bir foydalanuvchining qiymati o'ziga mos bo'ladi.
+    """
+    if (user.xp or 0) > 0:
+        return  # allaqachon hisoblangan — tegmaymiz
+
+    # Barcha bajarilgan rejalar
+    res = await session.execute(
+        select(Plan).where(
+            and_(Plan.user_id == user.id, Plan.status == PlanStatus.done)
+        )
+    )
+    done_plans = res.scalars().all()
+    if not done_plans:
+        # bajarilgan reja yo'q — faqat discipline'ni yangilab qo'yamiz
+        await _recompute_discipline_score(session, user)
+        return
+
+    # XP va total_score ni bajarilgan rejalardan tiklaymiz
+    total_xp = sum(max(1, p.score_value or 5) for p in done_plans)
+    user.xp = total_xp
+    user.total_score = max(user.total_score or 0, total_xp)
+    user.level = level_for_xp(user.xp)
+
+    title, emoji = rank_for_level(user.level)
+    user.rank_title = title
+    user.avatar_emoji = emoji
+
+    # Streak'ni bajarilgan kunlardan tiklaymiz
+    done_dates = sorted({p.plan_date for p in done_plans if p.plan_date})
+    if done_dates:
+        user.last_completed_date = done_dates[-1]
+        # ketma-ket kunlar bo'yicha eng uzun joriy streak
+        today = _today()
+        streak = 0
+        cursor = done_dates[-1]
+        date_set = set(done_dates)
+        # faqat oxirgi kun bugun yoki kecha bo'lsa joriy streak hisoblanadi
+        if cursor >= today - timedelta(days=1):
+            d = cursor
+            while d in date_set:
+                streak += 1
+                d = d - timedelta(days=1)
+        user.streak = streak
+        user.longest_streak = max(user.longest_streak or 0, streak)
+
+    await session.flush()
+    await _recompute_discipline_score(session, user)
+    await session.commit()
+
+
+# ─────────────────────────────────────────────────────────────
 #  PUBLIC: snapshot for webapp
 # ─────────────────────────────────────────────────────────────
 async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
+    # Backfill: agar foydalanuvchida bajarilgan rejalar bor-u, lekin XP/discipline
+    # hali hisoblanmagan bo'lsa (eski rejalar gamification'dan oldin bajarilgan),
+    # ularni mavjud ma'lumotdan tiklaymiz — shunda Asosiy sahifa har bir
+    # foydalanuvchi uchun o'ziga mos qiymat ko'rsatadi.
+    try:
+        await _backfill_user_stats(session, user)
+    except Exception:
+        pass
+
     lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)
     title, emoji = rank_for_level(lvl)
 

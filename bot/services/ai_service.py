@@ -289,24 +289,24 @@ FAQAT VAQTNI JAVOB QIL, MASALAN: 17:30 yoki null"""
 # ─────────────────────────────────────────────────────────────
 #  AI COACH — suhbat (chat) rejimi
 # ─────────────────────────────────────────────────────────────
-COACH_PERSONA = """Sen — "Intizom AI": o'zbek tilida (lotin) gaplashadigan shaxsiy intizom murabbiysi VA xulq-atvor psixologisan.
+COACH_PERSONA = """Sen — "Intizom AI": 10 yillik tajribaga ega shaxsiy psixolog, motivator va intizom murabbiysisan. O'zbek tilida (lotin) gaplashasan.
 
-KIM EKANLIGING:
-- Sen foydalanuvchining maqsadlari, rejalari va kayfiyat tarixini REAL ko'rib turibsan (ular pastda "FOYDALANUVCHI MA'LUMOTLARI" bo'limida beriladi).
-- Sen psixolog kabi tahlil qilasan: ularning intizom darajasi, izchilligi (consistency), kuchli va zaif tomonlarini, kayfiyat va energiya tendensiyalarini ko'rasan va shundan xulosa chiqarasan.
-- Sen iliq, qo'llab-quvvatlovchi, aqlli do'stsan. Hech qachon uyaltirmaysan, ayblamaysan, "toxic" bo'lmaysan.
+ICHKI BILIM (foydalanuvchiga aytma):
+- Suhbat boshida foydalanuvchining maqsadlari, oxirgi 7 kunlik rejalari, streak, daraja va kayfiyat tarixi senga beriladi.
+- Javob berishdan OLDIN bu ma'lumotni ichingda chuqur tahlil qil: izchillik (consistency), kuchli/zaif tomonlar, kayfiyat va energiya tendensiyasi, qaysi maqsadlar turg'un qolgan.
+- Bu tahlilni shunchaki ichki ravishda ishlat — javobing tabiiy, jonli va aniq bo'lsin.
 
-PSIXOLOGIK TAHLIL USULI (har javobda ichki ravishda o'yla):
-1. Foydalanuvchi nimani so'rayapti? (his-tuyg'umi, maslahatmi, hisobotmi?)
-2. Uning MA'LUMOTLARIDA nima ko'rinyapti? (bajarilgan/bajarilmagan rejalar, streak, kayfiyat tendensiyasi, qaysi maqsadlar turg'un qolgan)
-3. Shu ma'lumotga ASOSLANIB, aniq, shaxsiy, dalillangan javob ber. Umumiy gap emas — uning haqiqiy raqamlari/nomlarini eslat.
+ASOSIY QOIDA — ORTIQCHA GAPIRMA:
+- Foydalanuvchi SAVOL bermaguncha "men sen haqingda shularni bilaman", "ma'lumotlaringni ko'rib turibman", "rejalaring shular" kabi hisobot BERMA.
+- Foydalanuvchi shunchaki "salom" desa — iliq salomlash va qisqa, tabiiy savol ber (masalan: "Salom! Bugun nima ustida ishlaymiz?"). Ma'lumotlarini sanab chiqma.
+- Faqat foydalanuvchi o'zi so'raganda (masalan "men haqimda nima bilasan?", "rejalarimni tahlil qil") — o'shanda ma'lumotlaridan aniq misol va raqamlar bilan javob ber.
+- Aks holda: shunchaki uning savoliga to'g'ridan-to'g'ri, foydali javob ber. Ma'lumotlardan faqat javobni shaxsiylashtirish uchun, kerak bo'lganda, sezdirmasdan foydalan.
 
-QAT'IY QOIDALAR:
-- HECH QACHON "men sizning ma'lumotlaringizni ko'rmayman" yoki "ma'lumot yo'q" DEMA. Sen ma'lumotni ko'ryapsan — undan foydalan.
-- Agar foydalanuvchi "men haqimda nima bilasan?" desa — uning maqsadlari, oxirgi 7 kunlik rejalari, streak va kayfiyatidan aniq misollar bilan javob ber (masalan: "Bu hafta 5/7 reja bajarding, eng kuchli kunlaring...").
-- Agar biror bo'lim bo'sh bo'lsa (masalan maqsad yo'q), buni samimiy ayt va qo'shishga undab, kichik birinchi qadam taklif qil.
-- Javob qisqa va aniq: 2-6 jumla yoki kichik ro'yxat. 1-2 ta mos emoji. Oxirida bitta amaliy keyingi qadam.
-- Faqat o'zbek tilida (lotin). Foydalanuvchiga "sen" deb murojaat qil (do'stona)."""
+USLUB:
+- Iliq, qo'llab-quvvatlovchi, dono. Hech qachon uyaltirmaysan, ayblamaysan, "toxic" bo'lmaysan.
+- Qisqa va aniq: 2-5 jumla. 1-2 ta mos emoji. Kerak bo'lsa bitta amaliy keyingi qadam.
+- Faqat o'zbek tilida (lotin). Foydalanuvchiga "sen" deb murojaat qil.
+- HECH QACHON "men ma'lumotingizni ko'rmayman / ma'lumot yo'q" dema."""
 
 
 async def chat_with_coach(context_block: str, history: list[dict]) -> str:
@@ -337,30 +337,21 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         user_turns = sum(1 for m in convo if m["role"] == "user")
         first_question = user_turns <= 1
 
-        if first_question:
-            # Oxirgi foydalanuvchi savolini topamiz
-            last_user_idx = None
-            for i in range(len(convo) - 1, -1, -1):
-                if convo[i]["role"] == "user":
-                    last_user_idx = i
-                    break
-            # Kontekstni AYNAN oxirgi savolning ICHIGA joylashtiramiz — model uni
-            # e'tiborsiz qoldira olmaydi (savolning o'zi bilan birga keladi).
-            if last_user_idx is not None:
-                user_question = convo[last_user_idx]["content"]
-                convo[last_user_idx] = {
-                    "role": "user",
-                    "content": (
-                        "[MENING JONLI MA'LUMOTLARIM — bazadan olingan, shu asosda javob ber:]\n"
-                        + context_block +
-                        "\n\n[MENING SAVOLIM:]\n" + user_question +
-                        "\n\n(Eslatma: yuqoridagi ma'lumotlar — mening haqiqiy maqsad, reja va "
-                        "kayfiyatim. Shularga tayanib, aniq nom va raqamlar bilan javob ber. "
-                        "'Ma'lumot yo'q' DEMA.)"
-                    ),
-                }
-
         messages = [{"role": "system", "content": COACH_PERSONA}]
+
+        # Kontekst FAQAT birinchi savolda, ALOHIDA system xabar sifatida beriladi.
+        # (User xabari ichiga tiqilmaydi — shunda model uni "fon bilim" sifatida
+        #  ishlatadi va so'ralmaguncha sanab bermaydi.)
+        if first_question and context_block:
+            messages.append({
+                "role": "system",
+                "content": (
+                    "FON BILIM — foydalanuvchining hozirgi holati (faqat o'zing uchun, "
+                    "javobni shaxsiylashtirishda ishlat; foydalanuvchi so'ramaguncha "
+                    "bu ma'lumotlarni sanab berma):\n" + context_block
+                ),
+            })
+
         messages.extend(convo)
 
         response = await client.chat.completions.create(

@@ -536,9 +536,9 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
 /* ── Home day strip (kun tanlash) ───────────────────────────────────────── */
-.day-strip{display:flex;flex-direction:row-reverse;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.day-strip{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .day-strip::-webkit-scrollbar{display:none}
-.day-chip{flex:0 0 auto;scroll-snap-align:end;background:var(--surface);border:1.5px solid var(--border);border-radius:15px;padding:9px 13px;cursor:pointer;text-align:center;transition:all .25s;min-width:58px}
+.day-chip{flex:0 0 auto;scroll-snap-align:center;background:var(--surface);border:1.5px solid var(--border);border-radius:15px;padding:9px 13px;cursor:pointer;text-align:center;transition:all .25s;min-width:58px}
 .day-chip:active{transform:scale(.93)}
 .day-chip.active{background:var(--grad);color:#fff;border-color:transparent;box-shadow:var(--glow)}
 .day-chip .dw{font-size:10.5px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.4px}
@@ -916,9 +916,10 @@ function renderDayStrip(){
   const strip=document.getElementById('dayStrip');if(!strip)return;
   const sel=ymd(State.selectedDate||new Date());
   const todayStr=ymd(new Date());
-  // -14 kundan +3 kungacha (o'tgan tarix + bir nechta kelajak kun)
+  // Xronologik tartib: o'tgan 14 kun ... BUGUN ... kelgusi 3 kun
+  // (eng eski chapda, bugun o'rtada, kelajak o'ngda)
   let html='';
-  for(let off=3;off>=-14;off--){
+  for(let off=-14;off<=3;off++){
     const d=addDays(new Date(),off);
     const k=ymd(d);
     const isToday=k===todayStr;
@@ -928,8 +929,11 @@ function renderDayStrip(){
   }
   strip.innerHTML=html;
   strip.querySelectorAll('.day-chip').forEach(c=>c.onclick=()=>{State.selectedDate=new Date(c.dataset.day+'T00:00:00');loadPlansForSelectedDay();});
-  // tanlangan chipni ko'rinishga keltirish
-  const act=strip.querySelector('.day-chip.active');if(act)act.scrollIntoView({inline:'center',block:'nearest'});
+  // Tanlangan (yoki bugungi) chipni AYNAN o'rtaga keltiramiz
+  requestAnimationFrame(()=>{
+    const act=strip.querySelector('.day-chip.active')||strip.querySelector('.day-chip.today');
+    if(act){const target=act.offsetLeft-(strip.clientWidth/2)+(act.offsetWidth/2);strip.scrollTo({left:Math.max(0,target),behavior:'auto'});}
+  });
 }async function loadGoalsAPI(){try{State.goals=await api('/api/webapp/goals');}catch(e){console.warn('goals',e);State.goals=[];}setText('msGoals',State.goals.length);setText('stGoals',State.goals.filter(g=>!g.completed).length);const done=State.goals.filter(g=>g.completed).length+State.plans.filter(p=>p.status==='done').length;setText('stDone',done);setText('pfDone',done);renderGoalsView();}
 
 async function loadPlansRange(){try{const tod=new Date();const df=ymd(addDays(tod,-29));const dt=ymd(tod);const d=await api('/api/webapp/plans?date_from='+df+'&date_to='+dt);State.plansRange=d.plans||[];}catch(e){console.warn('range',e);State.plansRange=State.plans;}}
