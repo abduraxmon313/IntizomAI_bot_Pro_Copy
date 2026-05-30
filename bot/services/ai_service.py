@@ -332,23 +332,22 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         if not convo:
             return "Salom! Men Intizom AI murabbiyingman 🌱 Bugun nima ustida ishlaymiz?"
 
-        # Kontekst FAQAT suhbatning birinchi savolida yuboriladi (har safar emas).
-        # Keyingi savollarda model kontekstni suhbat tarixidan "eslab" turadi.
-        user_turns = sum(1 for m in convo if m["role"] == "user")
-        first_question = user_turns <= 1
-
         messages = [{"role": "system", "content": COACH_PERSONA}]
 
-        # Kontekst FAQAT birinchi savolda, ALOHIDA system xabar sifatida beriladi.
-        # (User xabari ichiga tiqilmaydi — shunda model uni "fon bilim" sifatida
-        #  ishlatadi va so'ralmaguncha sanab bermaydi.)
-        if first_question and context_block:
+        # Kontekst (foydalanuvchining REAL maqsad/reja/kayfiyati) HAR safar
+        # ALOHIDA system xabar sifatida beriladi. Bu modelning ma'lumotni
+        # "o'ylab topishini" (hallucination) oldini oladi — u har doim faqat
+        # haqiqiy ma'lumotga tayanadi. Persona qoidasi bo'yicha so'ralmaguncha
+        # uni sanab bermaydi, lekin javobni shu real ma'lumotga asoslaydi.
+        if context_block:
             messages.append({
                 "role": "system",
                 "content": (
-                    "FON BILIM — foydalanuvchining hozirgi holati (faqat o'zing uchun, "
-                    "javobni shaxsiylashtirishda ishlat; foydalanuvchi so'ramaguncha "
-                    "bu ma'lumotlarni sanab berma):\n" + context_block
+                    "FOYDALANUVCHINING REAL HOLATI (faqat shu ma'lumotga tayan, "
+                    "hech narsa o'ylab topma). Foydalanuvchi rejalari/maqsadlari "
+                    "haqida so'rasa — AYNAN shu yerdan o'qib ayt, boshqa narsa "
+                    "to'qib chiqarma. So'ramasa — sanab berma, lekin javobni shu "
+                    "holatga moslab ber:\n" + context_block
                 ),
             })
 
@@ -357,7 +356,7 @@ async def chat_with_coach(context_block: str, history: list[dict]) -> str:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.6,
+            temperature=0.4,
             max_tokens=450,
         )
         reply = (response.choices[0].message.content or "").strip()

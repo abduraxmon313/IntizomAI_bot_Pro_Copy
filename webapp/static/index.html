@@ -430,28 +430,35 @@ body::after{width:320px;height:320px;bottom:60px;left:-120px;background:var(--gr
 .xp-pop{position:fixed;top:30%;left:50%;transform:translate(-50%,-50%);background:var(--grad);color:#fff;padding:16px 28px;border-radius:24px;font-weight:800;font-size:22px;box-shadow:var(--glow);z-index:399;pointer-events:none;animation:xpPop 1.5s cubic-bezier(.22,1,.36,1) forwards}
 @keyframes xpPop{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}45%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
 
-/* ── Onboarding overlay ─────────────────────────────────────────────────── */
-.ob{position:fixed;inset:0;background:linear-gradient(135deg,rgba(15,23,42,.96),rgba(20,184,166,.92));backdrop-filter:blur(20px);z-index:500;display:none;flex-direction:column;padding:28px 22px 30px;animation:fadeIn .4s ease;color:#fff}
+/* ── Onboarding overlay (zamonaviy, temaga mos) ─────────────────────────── */
+.ob{position:fixed;inset:0;background:var(--grad);z-index:500;display:none;flex-direction:column;padding:28px 22px calc(28px + env(safe-area-inset-bottom));animation:fadeIn .4s ease;color:#fff;overflow:hidden}
 .ob.show{display:flex}
-.ob .step{flex:1;display:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;animation:obIn .5s cubic-bezier(.22,1,.36,1)}
-.ob .step.active{display:flex}
-@keyframes obIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.ob .em{font-size:84px;margin-bottom:18px;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25));animation:bob 3s ease-in-out infinite}
-.ob h1{font-size:26px;font-weight:800;margin-bottom:10px;line-height:1.25}
-.ob p{font-size:14.5px;line-height:1.55;opacity:.92;max-width:300px;margin-bottom:22px}
-.ob .opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px}
-.ob .opt{padding:14px;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,.18);border-radius:14px;font-weight:700;font-size:14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;color:#fff}
-.ob .opt:active{transform:scale(.98)}
-.ob .opt.sel{background:#fff;color:var(--primary);border-color:#fff}
-.ob .opt .em{font-size:22px;margin:0;animation:none;filter:none}
-.ob .dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px}
-.ob .dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}
-.ob .dot.active{width:22px;border-radius:4px;background:#fff}
-.ob .nav{display:flex;gap:10px;width:100%;max-width:320px;margin-top:8px}
-.ob .nav button{flex:1;padding:13px;border-radius:14px;border:none;font-weight:700;font-size:14px;cursor:pointer}
-.ob .nav .skip{background:rgba(255,255,255,.18);color:#fff}
-.ob .nav .next{background:#fff;color:var(--primary)}
-.ob .nav .next:active{transform:scale(.98)}
+/* fon bezaklari */
+.ob::before{content:'';position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.16);filter:blur(50px);top:-120px;right:-100px;animation:obFloat 16s ease-in-out infinite;pointer-events:none}
+.ob::after{content:'';position:absolute;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.12);filter:blur(50px);bottom:-100px;left:-90px;animation:obFloat 20s ease-in-out infinite reverse;pointer-events:none}
+@keyframes obFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(26px,-32px) scale(1.14)}}
+.ob .step{flex:1;display:none;flex-direction:column;justify-content:center;align-items:center;text-align:center;position:relative;z-index:1}
+.ob .step.active{display:flex;animation:obIn .55s cubic-bezier(.22,1,.36,1)}
+@keyframes obIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.ob .em{font-size:80px;margin-bottom:18px;filter:drop-shadow(0 10px 22px rgba(0,0,0,.28));animation:obBob 3s ease-in-out infinite}
+@keyframes obBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+.ob h1{font-size:27px;font-weight:900;margin-bottom:10px;line-height:1.22;letter-spacing:-.3px;text-shadow:0 2px 12px rgba(0,0,0,.18)}
+.ob p{font-size:14.5px;line-height:1.55;opacity:.95;max-width:300px;margin-bottom:24px}
+.ob .opts{display:flex;flex-direction:column;gap:11px;width:100%;max-width:330px}
+.ob .opt{padding:15px;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,.28);border-radius:16px;font-weight:700;font-size:14px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;color:#fff;transition:transform .2s,background .25s,box-shadow .25s;animation:obSlide .5s cubic-bezier(.22,1,.36,1) both}
+.ob .opt:nth-child(1){animation-delay:.06s}.ob .opt:nth-child(2){animation-delay:.13s}.ob .opt:nth-child(3){animation-delay:.2s}.ob .opt:nth-child(4){animation-delay:.27s}
+@keyframes obSlide{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.ob .opt:active{transform:scale(.97)}
+.ob .opt.sel{background:#fff;color:var(--primary);border-color:#fff;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.ob .opt .em{font-size:24px;margin:0;animation:none;filter:none}
+.ob .dots{display:flex;justify-content:center;gap:7px;margin-bottom:18px}
+.ob .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);transition:all .3s}
+.ob .dot.active{width:24px;border-radius:4px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.ob .nav{display:flex;gap:10px;width:100%;max-width:330px;margin-top:8px}
+.ob .nav button{flex:1;padding:15px;border-radius:15px;border:none;font-weight:800;font-size:14.5px;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.ob .nav button:active{transform:scale(.97)}
+.ob .nav .skip{background:rgba(255,255,255,.22);color:#fff;border:1.5px solid rgba(255,255,255,.45);backdrop-filter:blur(8px)}
+.ob .nav .next{background:#fff;color:var(--primary);box-shadow:0 10px 26px rgba(0,0,0,.2)}
 
 /* ── Locked premium chip ────────────────────────────────────────────────── */
 .locked-card{position:relative;overflow:hidden}
@@ -1054,6 +1061,12 @@ function applyPremiumUI(s){
     if(bar)bar.style.width='0%';
   }
 }
+// Onboarding'ni faqat premium foydalanuvchiga, bir marta ko'rsatamiz
+function maybeShowOnboarding(){
+  try{if(localStorage.getItem('iz_onboarded'))return;}catch(_){}
+  const ob=document.getElementById('onboarding');
+  if(ob)setTimeout(()=>ob.classList.add('show'),350);
+}
 async function loadSubscription(){
   try{
     const s=await api('/api/webapp/subscription');
@@ -1061,7 +1074,7 @@ async function loadSubscription(){
     try{localStorage.setItem('iz_premium',s.is_premium?'1':'0');}catch(_){}
     renderPaywallPlans(s.plans);
     applyPremiumUI(s);
-    if(s.is_premium){closePaywall();}
+    if(s.is_premium){closePaywall();maybeShowOnboarding();}
     else{const ob=document.getElementById('onboarding');if(ob)ob.classList.remove('show');openPaywall();}
     return !!s.is_premium;
   }catch(e){
@@ -1281,8 +1294,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('unlockOk').onclick=()=>document.getElementById('unlockOverlay').classList.remove('show');
 
   // ── Onboarding ─────────────────────────────────────────────────────
-  const obDone=localStorage.getItem('iz_onboarded');
-  if(!obDone){setTimeout(()=>{if(State.sub&&!State.sub.is_premium)return;document.getElementById('onboarding').classList.add('show');},600);}
+  // Onboarding faqat PREMIUM foydalanuvchiga (loadSubscription tasdiqlagach)
+  // ko'rsatiladi — maybeShowOnboarding() orqali.
   document.querySelectorAll('#onboarding [data-go]').forEach(b=>b.onclick=()=>{const idx=+b.dataset.go;document.querySelectorAll('#onboarding .step').forEach(s=>s.classList.toggle('active',+s.dataset.step===idx));});
   document.querySelectorAll('#personaOpts .opt').forEach(o=>o.onclick=()=>{document.querySelectorAll('#personaOpts .opt').forEach(x=>x.classList.remove('sel'));o.classList.add('sel');localStorage.setItem('iz_persona',o.dataset.p);});
   const _commitOpt=document.getElementById('commitOpt');if(_commitOpt)_commitOpt.onclick=()=>_commitOpt.classList.toggle('sel');
