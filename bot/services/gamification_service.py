@@ -352,57 +352,67 @@ async def reward_completion(
     user.last_active = datetime.utcnow()
 
     # Perfect-day detection (all today's plans done after this one)
-    today = _today()
-    pending_today = await session.scalar(
-        select(func.count(Plan.id)).where(
-            and_(
-                Plan.user_id == user.id,
-                Plan.plan_date == today,
-                Plan.status == PlanStatus.pending,
-                Plan.id != plan.id,
+    # Himoyalangan: bu yerda xato bo'lsa ham asosiy belgilash buzilmasligi kerak.
+    try:
+        today = _today()
+        pending_today = await session.scalar(
+            select(func.count(Plan.id)).where(
+                and_(
+                    Plan.user_id == user.id,
+                    Plan.plan_date == today,
+                    Plan.status == PlanStatus.pending,
+                    Plan.id != plan.id,
+                )
             )
-        )
-    ) or 0
-    total_today = await session.scalar(
-        select(func.count(Plan.id)).where(
-            and_(Plan.user_id == user.id, Plan.plan_date == today)
-        )
-    ) or 0
-    if is_done and total_today >= 2 and pending_today == 0:
-        out.perfect_day = True
-        user.perfect_days = (user.perfect_days or 0) + 1
-        # Bonus XP for perfect day
-        bonus = 15
-        user.xp += bonus
-        user.weekly_xp = (user.weekly_xp or 0) + bonus
-        out.xp_gained += bonus
-        new_level = level_for_xp(user.xp)
-        if new_level > user.level:
-            out.leveled_up = True
-            user.level = new_level
-            out.new_level = new_level
-        # Unlock perfect_day badge if first time
-        existing = await session.scalar(
-            select(Achievement).where(
-                and_(Achievement.user_id == user.id, Achievement.code == "perfect_day")
+        ) or 0
+        total_today = await session.scalar(
+            select(func.count(Plan.id)).where(
+                and_(Plan.user_id == user.id, Plan.plan_date == today)
             )
-        )
-        if not existing:
-            row = Achievement(
-                user_id=user.id, code="perfect_day",
-                title="Mukammal kun", icon="✨", rarity="rare",
+        ) or 0
+        if is_done and total_today >= 2 and pending_today == 0:
+            out.perfect_day = True
+            user.perfect_days = (user.perfect_days or 0) + 1
+            # Bonus XP for perfect day
+            bonus = 15
+            user.xp += bonus
+            user.weekly_xp = (user.weekly_xp or 0) + bonus
+            out.xp_gained += bonus
+            new_level = level_for_xp(user.xp)
+            if new_level > user.level:
+                out.leveled_up = True
+                user.level = new_level
+                out.new_level = new_level
+            # Unlock perfect_day badge if first time
+            existing = await session.scalar(
+                select(Achievement).where(
+                    and_(Achievement.user_id == user.id, Achievement.code == "perfect_day")
+                )
             )
-            session.add(row)
-            out.new_unlocks.append(row)
+            if not existing:
+                row = Achievement(
+                    user_id=user.id, code="perfect_day",
+                    title="Mukammal kun", icon="✨", rarity="rare",
+                )
+                session.add(row)
+                out.new_unlocks.append(row)
+    except Exception:
+        pass
 
-    # Discipline score
-    await session.flush()
-    out.discipline_score = await _recompute_discipline_score(session, user)
+    # Discipline score (himoyalangan)
+    try:
+        await session.flush()
+        out.discipline_score = await _recompute_discipline_score(session, user)
+    except Exception:
+        out.discipline_score = user.discipline_score or 50
 
-    # Achievement unlocks (after streak/level updated)
+    # Achievement unlocks (himoyalangan — xato bo'lsa belgilash buzilmaydi)
     if is_done:
-        more = await _check_unlocks(session, user)
-        out.new_unlocks.extend(more)
+        try:
+            more = await _check_unlocks(session, user)
+            out.new_unlocks.extend(more)
+        except Exception:
+            pass
 
     await session.commit()
     return out

@@ -32,6 +32,15 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Reja topilmadi!", show_alert=True)
         return
 
+    # O'tib ketgan kundagi rejani belgilab bo'lmaydi
+    from datetime import datetime as _dt
+    from bot.config import TIMEZONE as _TZ
+    if plan.plan_date and plan.plan_date < _dt.now(_TZ).date():
+        await callback.answer(
+            "⏰ O'tib ketgan kundagi rejani belgilab bo'lmaydi.", show_alert=True
+        )
+        return
+
     reward = await process_plan_result_full(session, user, plan, is_done=True)
 
     lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)

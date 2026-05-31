@@ -152,6 +152,9 @@ async def edit_plan(
         from bot.models.plan import Plan, PlanStatus
         from sqlalchemy import and_, select
         from bot.services.gamification_service import reward_completion
+        from datetime import date as _date
+        from bot.config import TIMEZONE
+        from datetime import datetime as _dt
 
         res = await session.execute(
             select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
@@ -160,20 +163,33 @@ async def edit_plan(
         if not plan:
             raise HTTPException(status_code=404, detail="Reja topilmadi")
 
+        # O'TGAN KUN tekshiruvi: o'tib ketgan kundagi rejani belgilab bo'lmaydi.
+        today = _dt.now(TIMEZONE).date()
+        if plan.plan_date and plan.plan_date < today:
+            raise HTTPException(
+                status_code=409,
+                detail="O'tib ketgan kundagi rejani belgilab bo'lmaydi.",
+            )
+
         # reward_completion faqat pending rejalarni mukofotlaydi (idempotent).
         if plan.status == PlanStatus.pending:
-            await reward_completion(session, user, plan, is_done=(body.status == "done"))
-        else:
-            # Allaqachon belgilangan — faqat boshqa maydonlar bo'lsa yangilaymiz
-            if body.title is not None or body.description is not None or body.scheduled_time is not None:
-                await update_plan_fields(
-                    session, plan_id, user.id,
-                    title=body.title, description=body.description,
-                    scheduled_time=body.scheduled_time, status=None,
+            try:
+                await reward_completion(session, user, plan, is_done=(body.status == "done"))
+            except Exception:
+                # Gamification xato bersa ham, kamida statusni saqlaymiz
+                await session.rollback()
+                res2 = await session.execute(
+                    select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
                 )
-        await session.refresh(plan)
+                plan = res2.scalar_one_or_none()
+                if plan:
+                    plan.status = PlanStatus.done if body.status == "done" else PlanStatus.failed
+                    await session.commit()
+        if plan:
+            await session.refresh(plan)
         return _serialize(plan)
 
+    # status="pending" (belgilashni bekor qilish) yoki boshqa maydon yangilanishi
     plan = await update_plan_fields(
         session, plan_id, user.id,
         title=body.title,
