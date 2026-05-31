@@ -53,19 +53,16 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
         lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)
         rank, emoji = rank_for_level(lvl)
 
-        # Build celebratory message
-        lines = [f"🎉 <b>+{reward.xp_gained} XP</b>"]
-        if reward.streak_extended:
-            lines.append(f"🔥 Streak: <b>{reward.new_streak} kun</b>")
+        # Premium-his beradigan, toza bayram xabari
+        lines = [f"🎯 <b>{plan.title}</b> — bajarildi!", ""]
 
-        lines += [
-            "",
-            f"📌 {plan.title} ✅",
-            "",
-            f"{emoji} <b>{rank}</b> — Daraja {lvl}",
-            f"<code>{_xp_bar(pct)}</code> {pct}%",
-            f"💎 Discipline: <b>{reward.discipline_score}/100</b>",
-        ]
+        row = f"⚡️ <b>+{reward.xp_gained} XP</b>"
+        if reward.streak_extended:
+            row += f"     🔥 <b>{reward.new_streak} kun</b>"
+        lines.append(row)
+        lines.append(f"{emoji} <b>{rank}</b> · Daraja {lvl}")
+        lines.append(f"<code>{_xp_bar(pct)}</code> {pct}%")
+        lines.append(f"💎 Discipline: <b>{reward.discipline_score}/100</b>")
 
         extras = []
         if reward.leveled_up:
@@ -76,14 +73,14 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
             extras.append(f"{ach.icon} <b>Yangi yutuq:</b> {ach.title}")
 
         if extras:
-            lines.append("")
+            lines.append("\n━━━━━━━━━━━━━")
             lines.extend(extras)
 
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🔁 Ertaga ham", callback_data=f"continue_{plan_id}")],
+            [InlineKeyboardButton(text="🔁 Ertaga ham qo'shish", callback_data=f"continue_{plan_id}")],
             [
                 InlineKeyboardButton(text="📋 Rejalarim", callback_data="my_plans"),
-                InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="home"),
+                InlineKeyboardButton(text="🏠 Asosiy", callback_data="home"),
             ],
         ])
 
@@ -99,11 +96,11 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
     # Toast
     try:
         if reward.leveled_up:
-            await callback.answer(f"🎉 Daraja {reward.new_level}!", show_alert=False)
+            await callback.answer(f"🎉 Yangi daraja — {reward.new_level}!", show_alert=False)
         elif reward.new_unlocks:
-            await callback.answer("🏆 +1 yutuq", show_alert=False)
+            await callback.answer("🏆 Yangi yutuq ochildi!", show_alert=False)
         else:
-            await callback.answer(f"✅ +{reward.xp_gained} XP")
+            await callback.answer(f"✨ +{reward.xp_gained} XP")
     except Exception:
         pass
 
@@ -122,18 +119,20 @@ async def failed_handler(callback: CallbackQuery, session: AsyncSession):
     reward = await process_plan_result_full(session, user, plan, is_done=False)
 
     text = (
-        f"💭 <b>{plan.title}</b> bugun bo'lmadi.\n\n"
-        f"Bu — yakun emas. Ertaga yana imkoniyat.\n\n"
+        f"💭 <b>{plan.title}</b>\n"
+        f"<i>Bugun bo'lmadi — zarari yo'q.</i>\n\n"
+        f"Tushish — mag'lubiyat emas. To'xtab qolish — mag'lubiyat. "
+        f"Ertaga yana bir imkoniyat bor 💪\n\n"
         f"💎 Discipline: <b>{reward.discipline_score}/100</b>\n"
         f"🔥 Streak: <b>{user.streak} kun</b>"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📅 Ertaga ko'chir", callback_data=f"tomorrow_{plan_id}")],
-        [InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="home")],
+        [InlineKeyboardButton(text="📅 Ertaga ko'chirish", callback_data=f"tomorrow_{plan_id}")],
+        [InlineKeyboardButton(text="🏠 Asosiy", callback_data="home")],
     ])
 
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=keyboard)
-    await callback.answer("Ertaga yana urinib ko'r 💪")
+    await callback.answer("Ertaga yana urinamiz 💪")
 
 
 @router.callback_query(F.data.startswith("tomorrow_"))
@@ -151,7 +150,7 @@ async def tomorrow_handler(callback: CallbackQuery, session: AsyncSession):
         f"📅 <b>{plan.title}</b> ertaga ko'chirildi.\n\n"
         f"🗓 {new_plan.plan_date.strftime('%d.%m.%Y')}\n"
         f"{f'🕐 {new_plan.scheduled_time}' if new_plan.scheduled_time else '🕐 Vaqtsiz'}\n\n"
-        f"Ertaga eslataman.",
+        f"⏰ Vaqti kelganda eslatib turaman.",
         parse_mode="HTML",
         reply_markup=back_to_home_keyboard(),
     )
@@ -170,7 +169,7 @@ async def continue_handler(callback: CallbackQuery, session: AsyncSession):
     new_plan = await duplicate_plan_for_tomorrow(session, plan)
 
     await callback.message.edit_text(
-        f"🔁 <b>A'lo!</b>\n\n"
+        f"🔁 <b>Zo'r — odat shakllanmoqda!</b>\n\n"
         f"📌 {plan.title} — ertaga ham davom etadi.\n\n"
         f"🗓 {new_plan.plan_date.strftime('%d.%m.%Y')}\n"
         f"{f'🕐 {new_plan.scheduled_time}' if new_plan.scheduled_time else '🕐 Vaqtsiz'}",
