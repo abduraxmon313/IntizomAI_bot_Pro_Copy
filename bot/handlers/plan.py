@@ -8,6 +8,8 @@ import logging
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.ai_service import transcribe_voice, extract_plans_from_text
 from bot.services.plan_service import create_plans, get_today_plans, get_plan_by_id, delete_plan
+from bot.services.premium_service import user_is_premium
+from bot.utils.ratelimit import allow_ai_analysis, seconds_until_reset
 from bot.keyboards.plan_keys import (
     confirm_plans_keyboard, plans_list_keyboard,
     plan_actions_keyboard, plan_list_actions_keyboard
@@ -16,6 +18,32 @@ from bot.utils.formatters import format_plan_confirm, format_plan_list
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+
+async def _ai_rate_ok(message: Message, session: AsyncSession) -> bool:
+    """
+    AI tahliliga (Whisper/GPT) ruxsat bormi? Suiiste'mol (cost abuse) himoyasi.
+    Limit oshsa — foydalanuvchiga xabar berib False qaytaradi.
+    """
+    is_premium = False
+    try:
+        user = await get_user_by_telegram_id(session, message.from_user.id)
+        is_premium = user_is_premium(user) if user else False
+    except Exception:
+        is_premium = False
+
+    if allow_ai_analysis(message.from_user.id, is_premium):
+        return True
+
+    wait_min = max(1, seconds_until_reset(message.from_user.id) // 60)
+    await message.answer(
+        "⏳ <b>Biroz sekinlashtiramiz.</b>\n\n"
+        "Juda ko'p ketma-ket so'rov yubordingiz. "
+        f"Iltimos, ~{wait_min} daqiqadan so'ng qayta urinib ko'ring.\n\n"
+        "💎 Premium foydalanuvchilar uchun cheklov ancha yuqori.",
+        parse_mode="HTML",
+    )
+    return False
 
 
 class PlanState(StatesGroup):
@@ -155,6 +183,10 @@ async def handle_voice_any(message: Message, state: FSMContext, session: AsyncSe
         await handle_voice_for_time(message, state)
         return
 
+    # AI xarajat himoyasi — Whisper/GPT chaqiruvidan OLDIN
+    if not await _ai_rate_ok(message, session):
+        return
+
     processing_msg = await message.answer("⏳ Tahlil qilinmoqda...")
 
     try:
@@ -227,6 +259,10 @@ async def handle_text_any(message: Message, state: FSMContext, session: AsyncSes
     # Vaqt so'rash holatida
     if current_state == PlanState.asking_time.state:
         await process_time_input(message, state, message.text)
+        return
+
+    # AI xarajat himoyasi — GPT chaqiruvidan OLDIN
+    if not await _ai_rate_ok(message, session):
         return
 
     processing_msg = await message.answer("⏳ Tahlil qilinmoqda...")

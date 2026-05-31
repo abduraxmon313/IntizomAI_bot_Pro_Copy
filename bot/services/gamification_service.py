@@ -559,35 +559,118 @@ async def _backfill_user_stats_isolated(user_id: int) -> None:
 # ─────────────────────────────────────────────────────────────
 #  PUBLIC: snapshot for webapp
 # ─────────────────────────────────────────────────────────────
+async def _reconcile_user_stats(session: AsyncSession, user: User) -> None:
+    """
+    Foydalanuvchi statistikasini HAQIQIY manbadan (bajarilgan rejalar) qayta
+    hisoblab, request sessiyasida saqlaydi. Bu funksiya snapshot har chaqirilganda
+    ishlaydi va xp/total_score/level/discipline ni doim moslashtiradi — shu tufayli
+    "xp=0 lekin total_score=55" kabi nomuvofiqliklar bo'lmaydi.
+
+    Avvalgi versiyada bu ALOHIDA sessiyada (`_backfill_user_stats_isolated`) va faqat
+    `xp==0` bo'lganda bajarilardi; nested sessiya/skip mantig'i ba'zan snapshot'ni
+    buzib, frontendda default qiymatlar (0 XP, 50 discipline, 0/0) ko'rinardi.
+    """
+    # XP / total_score / level / rank — bajarilgan rejalar yig'indisidan
+    total = await session.scalar(
+        select(func.coalesce(func.sum(Plan.score_value), 0)).where(
+            and_(Plan.user_id == user.id, Plan.status == PlanStatus.done)
+        )
+    ) or 0
+    total = int(total)
+    user.xp = total
+    user.total_score = total
+    user.level = level_for_xp(total)
+    title, emoji = rank_for_level(user.level)
+    user.rank_title = title
+    user.avatar_emoji = emoji
+
+    # Streak — agar hech qachon hisoblanmagan bo'lsa (last_completed_date None),
+    # bajarilgan rejalar sanalaridan joriy streak'ni tiklaymiz.
+    if user.last_completed_date is None:
+        res = await session.execute(
+            select(Plan.plan_date).where(
+                and_(Plan.user_id == user.id, Plan.status == PlanStatus.done)
+            )
+        )
+        done_dates = sorted({d for d in res.scalars().all() if d})
+        if done_dates:
+            today = _today()
+            user.last_completed_date = done_dates[-1]
+            date_set = set(done_dates)
+            streak = 0
+            if done_dates[-1] >= today - timedelta(days=1):
+                d = done_dates[-1]
+                while d in date_set:
+                    streak += 1
+                    d = d - timedelta(days=1)
+            user.streak = streak
+            user.longest_streak = max(user.longest_streak or 0, streak)
+
+    await _recompute_discipline_score(session, user)
+
+
 async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
-    # Backfill ALOHIDA sessiyada bajariladi — agar u xato bersa ham, quyidagi
-    # so'rovlar (today_plans, achievements) hech qachon buzilmaydi. So'ngra
-    # request sessiyasidagi user obyektini yangilaymiz.
-    await _backfill_user_stats_isolated(user.id)
+    """
+    Webapp uchun foydalanuvchi holatini qaytaradi.
+
+    MUHIM: bu funksiya HECH QACHON xato ko'tarmasligi kerak — aks holda
+    frontend hero default qiymatlarni (0 XP, 50 discipline, 0/0 bugun)
+    ko'rsatib qoladi. Shuning uchun har bir bosqich himoyalangan.
+    """
+    # 1) Statistikani moslashtirish (xp/score/level/discipline) — best-effort.
     try:
-        await session.refresh(user)
+        await _reconcile_user_stats(session, user)
+        await session.commit()
     except Exception:
-        pass
+        try:
+            await session.rollback()
+        except Exception:
+            pass
+        try:
+            await session.refresh(user)
+        except Exception:
+            pass
 
     lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)
     title, emoji = rank_for_level(lvl)
 
     today = _today()
-    today_plans = await session.execute(
-        select(Plan).where(
-            and_(Plan.user_id == user.id, Plan.plan_date == today)
-        )
-    )
-    today_plans = today_plans.scalars().all()
-    today_done = sum(1 for p in today_plans if p.status == PlanStatus.done)
-    today_total = len(today_plans)
 
-    achs_res = await session.execute(
-        select(Achievement)
-        .where(Achievement.user_id == user.id)
-        .order_by(Achievement.unlocked_at.desc())
-    )
-    achs = achs_res.scalars().all()
+    # 2) Bugungi rejalar — alohida himoyalangan (xato bo'lsa ham snapshot qaytadi).
+    today_done = 0
+    today_total = 0
+    try:
+        res = await session.execute(
+            select(Plan).where(
+                and_(Plan.user_id == user.id, Plan.plan_date == today)
+            )
+        )
+        today_plans = res.scalars().all()
+        today_total = len(today_plans)
+        today_done = sum(1 for p in today_plans if p.status == PlanStatus.done)
+    except Exception:
+        pass
+
+    # 3) Yutuqlar — alohida himoyalangan.
+    achievements = []
+    try:
+        achs_res = await session.execute(
+            select(Achievement)
+            .where(Achievement.user_id == user.id)
+            .order_by(Achievement.unlocked_at.desc())
+        )
+        achievements = [
+            {
+                "code": a.code,
+                "title": a.title,
+                "icon": a.icon,
+                "rarity": a.rarity,
+                "unlocked_at": a.unlocked_at.isoformat() if a.unlocked_at else None,
+            }
+            for a in achs_res.scalars().all()
+        ]
+    except Exception:
+        pass
 
     # Streak status: at_risk if last completed wasn't today
     risk = (
@@ -598,6 +681,7 @@ async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
     return {
         "level": lvl,
         "xp": user.xp or 0,
+        "total_score": user.total_score or 0,
         "xp_in_level": in_lvl,
         "xp_needed": needed,
         "xp_percent": pct,
@@ -615,14 +699,5 @@ async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
         "today_completion_pct": (
             int(today_done * 100 / today_total) if today_total else 0
         ),
-        "achievements": [
-            {
-                "code": a.code,
-                "title": a.title,
-                "icon": a.icon,
-                "rarity": a.rarity,
-                "unlocked_at": a.unlocked_at.isoformat() if a.unlocked_at else None,
-            }
-            for a in achs
-        ],
+        "achievements": achievements,
     }

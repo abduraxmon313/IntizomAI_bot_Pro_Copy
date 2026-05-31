@@ -15,6 +15,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import TIMEZONE
+from webapp.security import resolve_telegram_id
 from bot.models.checkin import DailyCheckin
 from bot.models.plan import Plan, PlanStatus
 from bot.services.ai_service import chat_with_coach
@@ -193,7 +194,7 @@ async def _build_context(session: AsyncSession, user) -> str:
 
 @router.get("/ai/context", response_model=ContextOut)
 async def ai_context(
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     """
@@ -214,8 +215,8 @@ async def ai_context(
 
 @router.post("/ai/chat", response_model=ChatOut)
 async def ai_chat(
-    telegram_id: int,
     body: ChatIn,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)

@@ -243,7 +243,7 @@ async def send_daily_summary(bot):
 
 # ─────────────────────────────────────────────────────────────
 async def check_pending_plans(bot):
-    """23:00 — last call for pending plans."""
+    """23:00 — last call for pending plans (har foydalanuvchiga BITTA xabar)."""
     async with AsyncSessionLocal() as session:
         today = datetime.now(TIMEZONE).date()
         pending_plans = (await session.execute(
@@ -255,19 +255,29 @@ async def check_pending_plans(bot):
             )
         )).scalars().all()
 
+        if not pending_plans:
+            return
+
+        # Foydalanuvchi bo'yicha guruhlash — spam'ning oldini olish uchun
+        by_user: dict[int, list[Plan]] = {}
         for plan in pending_plans:
+            by_user.setdefault(plan.user_id, []).append(plan)
+
+        for user_id, plans in by_user.items():
             user = (await session.execute(
-                select(User).where(User.id == plan.user_id)
+                select(User).where(User.id == user_id)
             )).scalar_one_or_none()
             if not user:
                 continue
 
+            lines = []
+            for p in plans[:15]:
+                tm = f" 🕐 {p.scheduled_time}" if p.scheduled_time else ""
+                lines.append(f"• <b>{p.title}</b>{tm}")
+            extra = f"\n…va yana {len(plans) - 15} ta" if len(plans) > 15 else ""
+
             kb = InlineKeyboardMarkup(inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="✅ Bajardim", callback_data=f"done_{plan.id}"),
-                    InlineKeyboardButton(text="❌ Bajarmadim", callback_data=f"failed_{plan.id}"),
-                ],
-                [InlineKeyboardButton(text="📅 Ertaga", callback_data=f"tomorrow_{plan.id}")],
+                [InlineKeyboardButton(text="📋 Rejalarni belgilash", callback_data="my_plans")],
             ])
 
             try:
@@ -275,9 +285,9 @@ async def check_pending_plans(bot):
                     chat_id=user.telegram_id,
                     text=(
                         f"🌙 <b>Kun tugamoqda</b>\n\n"
-                        f"📌 <b>{plan.title}</b>\n"
-                        f"{f'🕐 {plan.scheduled_time}' if plan.scheduled_time else '🕐 Vaqtsiz'}\n\n"
-                        f"Bu rejani bajardingmi?"
+                        f"Quyidagi <b>{len(plans)} ta</b> reja hali belgilanmagan:\n\n"
+                        + "\n".join(lines) + extra +
+                        "\n\nBugun nimalarni uddaladingiz? Belgilab qo'ying 👇"
                     ),
                     parse_mode="HTML", reply_markup=kb,
                 )

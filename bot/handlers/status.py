@@ -2,12 +2,13 @@ from aiogram import Router, F
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from datetime import date
+from datetime import datetime
 
+from bot.config import TIMEZONE
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.gamification_service import xp_progress, rank_for_level
+from bot.services.score_service import get_today_score
 from bot.models.plan import Plan, PlanStatus
-from bot.models.score_log import ScoreLog
 from bot.models.achievement import Achievement
 
 router = Router()
@@ -26,9 +27,10 @@ async def my_status_handler(message: Message, session: AsyncSession):
     bar_filled = "▰" * round(pct / 10)
     bar_empty = "▱" * (10 - len(bar_filled))
 
+    today = datetime.now(TIMEZONE).date()
     plans_result = await session.execute(
         select(Plan).where(
-            and_(Plan.user_id == user.id, Plan.plan_date == date.today())
+            and_(Plan.user_id == user.id, Plan.plan_date == today)
         )
     )
     plans = plans_result.scalars().all()
@@ -36,15 +38,7 @@ async def my_status_handler(message: Message, session: AsyncSession):
     done_today = len([p for p in plans if p.status == PlanStatus.done])
     total_today = len(plans)
 
-    score_result = await session.execute(
-        select(func.sum(ScoreLog.score_change)).where(
-            and_(
-                ScoreLog.user_id == user.id,
-                func.date(ScoreLog.created_at) == date.today(),
-            )
-        )
-    )
-    today_score = score_result.scalar() or 0
+    today_score = await get_today_score(session, user)
 
     all_done = await session.scalar(
         select(func.count(Plan.id)).where(

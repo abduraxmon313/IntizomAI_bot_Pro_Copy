@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from database.db import AsyncSessionLocal
+from webapp.security import resolve_telegram_id
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.goal_service import (
     get_user_goals,
@@ -88,7 +89,7 @@ def _is_period_past(goal_type: str, period: str) -> bool:
 
 @router.get("/goals", response_model=list[GoalOut])
 async def get_goals(
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
@@ -111,8 +112,8 @@ async def get_goals(
 
 @router.post("/goals", response_model=GoalOut)
 async def add_goal(
-    telegram_id: int,
     body: GoalCreate,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
@@ -135,8 +136,8 @@ async def add_goal(
 @router.put("/goals/{goal_id}", response_model=GoalOut)
 async def edit_goal(
     goal_id: int,
-    telegram_id: int,
     body: GoalUpdate,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
@@ -176,7 +177,7 @@ async def edit_goal(
 @router.delete("/goals/{goal_id}")
 async def remove_goal(
     goal_id: int,
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)

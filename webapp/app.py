@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -18,6 +19,12 @@ from webapp.security import (
 logger = logging.getLogger(__name__)
 STATIC_DIR = Path(__file__).parent / "static"
 
+# Bot'ni shu server jarayonida ishga tushirishni boshqarish.
+# Default = true. Agar bot alohida jarayonda ishga tushsa yoki uvicorn bir
+# nechta worker bilan ishlasa — bu yerda false qilib qo'yib, 409 Conflict
+# (bir token bilan ko'p polling) muammosini oldini olish mumkin.
+RUN_BOT = os.getenv("RUN_BOT", "true").strip().lower() in ("1", "true", "yes")
+
 
 async def run_bot():
     try:
@@ -32,14 +39,19 @@ async def run_bot():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    bot_task = asyncio.create_task(run_bot())
+    bot_task = None
+    if RUN_BOT:
+        bot_task = asyncio.create_task(run_bot())
+    else:
+        logger.info("ℹ️ RUN_BOT=false — bot bu jarayonda ishga tushirilmadi")
     logger.info("🌐 FastAPI server tayyor")
     yield
-    bot_task.cancel()
-    try:
-        await bot_task
-    except asyncio.CancelledError:
-        pass
+    if bot_task is not None:
+        bot_task.cancel()
+        try:
+            await bot_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(
@@ -52,7 +64,10 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    # Autentifikatsiya cookie orqali emas, `X-Telegram-Init-Data` header orqali
+    # bo'lgani uchun credentials kerak emas. allow_credentials=True + "*" — bu
+    # brauzer spetsifikatsiyasiga zid (noto'g'ri konfiguratsiya), shuning uchun False.
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
