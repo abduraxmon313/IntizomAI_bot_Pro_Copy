@@ -176,7 +176,16 @@ async def edit_plan(
             "pending": PlanStatus.pending,
         }[body.status]
         await set_plan_status(session, user, plan, target)
-        await session.refresh(plan)
+
+        # set_plan_status ichida bir nechta commit/rollback bo'lgani uchun,
+        # plan obyekti stale bo'lishi mumkin — xavfsiz re-read.
+        try:
+            await session.refresh(plan)
+        except Exception:
+            res2 = await session.execute(
+                select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
+            )
+            plan = res2.scalar_one_or_none() or plan
         return _serialize(plan)
 
     # Faqat boshqa maydonlar (title/desc/time) yangilanishi
