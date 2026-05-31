@@ -43,56 +43,63 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
 
     reward = await process_plan_result_full(session, user, plan, is_done=True)
 
-    lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)
-    rank, emoji = rank_for_level(lvl)
+    try:
+        lvl, in_lvl, needed, pct = xp_progress(user.xp or 0)
+        rank, emoji = rank_for_level(lvl)
 
-    # Build celebratory message
-    lines = [f"🎉 <b>+{reward.xp_gained} XP</b>"]
-    if reward.streak_extended:
-        lines.append(f"🔥 Streak: <b>{reward.new_streak} kun</b>")
+        # Build celebratory message
+        lines = [f"🎉 <b>+{reward.xp_gained} XP</b>"]
+        if reward.streak_extended:
+            lines.append(f"🔥 Streak: <b>{reward.new_streak} kun</b>")
 
-    lines += [
-        "",
-        f"📌 {plan.title} ✅",
-        "",
-        f"{emoji} <b>{rank}</b> — Daraja {lvl}",
-        f"<code>{_xp_bar(pct)}</code> {pct}%",
-        f"💎 Discipline: <b>{reward.discipline_score}/100</b>",
-    ]
+        lines += [
+            "",
+            f"📌 {plan.title} ✅",
+            "",
+            f"{emoji} <b>{rank}</b> — Daraja {lvl}",
+            f"<code>{_xp_bar(pct)}</code> {pct}%",
+            f"💎 Discipline: <b>{reward.discipline_score}/100</b>",
+        ]
 
-    extras = []
-    if reward.leveled_up:
-        extras.append(message_for_level_up(reward.new_level))
-    if reward.perfect_day:
-        extras.append(message_for_perfect_day())
-    for ach in reward.new_unlocks:
-        extras.append(f"{ach.icon} <b>Yangi yutuq:</b> {ach.title}")
+        extras = []
+        if reward.leveled_up:
+            extras.append(message_for_level_up(reward.new_level))
+        if reward.perfect_day:
+            extras.append(message_for_perfect_day())
+        for ach in reward.new_unlocks:
+            extras.append(f"{ach.icon} <b>Yangi yutuq:</b> {ach.title}")
 
-    if extras:
-        lines.append("")
-        lines.extend(extras)
+        if extras:
+            lines.append("")
+            lines.extend(extras)
 
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🔁 Ertaga ham", callback_data=f"continue_{plan_id}")],
-        [
-            InlineKeyboardButton(text="📋 Rejalarim", callback_data="my_plans"),
-            InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="home"),
-        ],
-    ])
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔁 Ertaga ham", callback_data=f"continue_{plan_id}")],
+            [
+                InlineKeyboardButton(text="📋 Rejalarim", callback_data="my_plans"),
+                InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="home"),
+            ],
+        ])
 
-    await callback.message.edit_text(
-        "\n".join(lines),
-        parse_mode="HTML",
-        reply_markup=keyboard,
-    )
+        await callback.message.edit_text(
+            "\n".join(lines),
+            parse_mode="HTML",
+            reply_markup=keyboard,
+        )
+    except Exception:
+        # Xabarni yangilashda xato bo'lsa ham — belgilash allaqachon saqlangan
+        pass
 
     # Toast
-    if reward.leveled_up:
-        await callback.answer(f"🎉 Daraja {reward.new_level}!", show_alert=False)
-    elif reward.new_unlocks:
-        await callback.answer(f"🏆 +1 yutuq", show_alert=False)
-    else:
-        await callback.answer(f"+{reward.xp_gained} XP")
+    try:
+        if reward.leveled_up:
+            await callback.answer(f"🎉 Daraja {reward.new_level}!", show_alert=False)
+        elif reward.new_unlocks:
+            await callback.answer("🏆 +1 yutuq", show_alert=False)
+        else:
+            await callback.answer(f"✅ +{reward.xp_gained} XP")
+    except Exception:
+        pass
 
 
 @router.callback_query(F.data.startswith("failed_"))

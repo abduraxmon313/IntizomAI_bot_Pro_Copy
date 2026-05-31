@@ -171,22 +171,11 @@ async def edit_plan(
                 detail="O'tib ketgan kundagi rejani belgilab bo'lmaydi.",
             )
 
-        # reward_completion faqat pending rejalarni mukofotlaydi (idempotent).
+        # reward_completion endi asosiy statusni o'zi (alohida) commit qiladi,
+        # shuning uchun bu yerda qo'shimcha xatolik bilan kurashish shart emas.
         if plan.status == PlanStatus.pending:
-            try:
-                await reward_completion(session, user, plan, is_done=(body.status == "done"))
-            except Exception:
-                # Gamification xato bersa ham, kamida statusni saqlaymiz
-                await session.rollback()
-                res2 = await session.execute(
-                    select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
-                )
-                plan = res2.scalar_one_or_none()
-                if plan:
-                    plan.status = PlanStatus.done if body.status == "done" else PlanStatus.failed
-                    await session.commit()
-        if plan:
-            await session.refresh(plan)
+            await reward_completion(session, user, plan, is_done=(body.status == "done"))
+        await session.refresh(plan)
         return _serialize(plan)
 
     # status="pending" (belgilashni bekor qilish) yoki boshqa maydon yangilanishi
