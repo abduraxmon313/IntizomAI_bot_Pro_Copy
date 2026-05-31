@@ -281,80 +281,67 @@ async def _check_unlocks(session: AsyncSession, user: User) -> list[Achievement]
 # ─────────────────────────────────────────────────────────────
 #  PUBLIC: process plan completion
 # ─────────────────────────────────────────────────────────────
-async def reward_completion(
+async def _recompute_xp_and_score(session: AsyncSession, user: User) -> None:
+    """XP va total_score ni BARCHA bajarilgan rejalardan deterministik tiklaydi.
+    Shu tufayli done<->failed<->pending o'zgarishlarida drift bo'lmaydi."""
+    total = await session.scalar(
+        select(func.coalesce(func.sum(Plan.score_value), 0)).where(
+            and_(Plan.user_id == user.id, Plan.status == PlanStatus.done)
+        )
+    ) or 0
+    total = int(total)
+    user.xp = total
+    user.total_score = total
+    user.level = level_for_xp(total)
+    title, emoji = rank_for_level(user.level)
+    user.rank_title = title
+    user.avatar_emoji = emoji
+
+
+async def set_plan_status(
     session: AsyncSession,
     user: User,
     plan: Plan,
-    is_done: bool,
+    new_status: PlanStatus,
 ) -> CompletionReward:
     """
-    Atomic reward step. Updates user stats, writes ScoreLog, persists
-    achievements. Caller is responsible for commit boundaries — we use
-    flush + commit at the end so the whole reward is consistent.
+    Rejani istalgan holatga o'tkazadi (pending/done/failed) — toggle va
+    qayta belgilashni qo'llab-quvvatlaydi. Xato bo'lsa ham asosiy status
+    o'zgarishi DARHOL saqlanadi.
     """
     out = CompletionReward()
     out.new_level = user.level or 1
     out.new_streak = user.streak or 0
 
-    if plan.status != PlanStatus.pending:
-        return out  # idempotent — never reward twice
+    if plan.status == new_status:
+        out.discipline_score = user.discipline_score or 50
+        return out
 
-    if is_done:
-        # XP = base score_value × streak multiplier (capped)
-        base = max(1, plan.score_value or 5)
-        streak_mult = 1.0 + min(0.5, (user.streak or 0) * 0.02)  # +2% per day, max +50%
-        xp_gained = int(round(base * streak_mult))
+    became_done = (new_status == PlanStatus.done)
+    base = max(1, plan.score_value or 5)
+    plan.status = new_status
 
-        user.xp = (user.xp or 0) + xp_gained
-        user.weekly_xp = (user.weekly_xp or 0) + xp_gained
-        user.total_score = (user.total_score or 0) + base
-
-        prev_level = user.level or 1
-        new_level = level_for_xp(user.xp)
-        user.level = new_level
-
-        out.xp_gained = xp_gained
-        out.score_change = base
-        out.leveled_up = new_level > prev_level
-        out.new_level = new_level
-
+    if became_done:
         out.streak_extended = _update_streak_on_complete(user)
         out.new_streak = user.streak
 
-        # Rank refresh
-        title, emoji = rank_for_level(user.level)
-        user.rank_title = title
-        user.avatar_emoji = emoji
-
-        plan.status = PlanStatus.done
-
-        log = ScoreLog(
-            user_id=user.id,
-            plan_id=plan.id,
-            score_change=base,
-            reason=f"✅ '{plan.title}' bajarildi (+{xp_gained} XP)",
-        )
-        session.add(log)
-    else:
-        score_change = -3
-        user.total_score = (user.total_score or 0) + score_change
-        out.score_change = score_change
-        plan.status = PlanStatus.failed
-
-        log = ScoreLog(
-            user_id=user.id,
-            plan_id=plan.id,
-            score_change=score_change,
-            reason=f"❌ '{plan.title}' bajarilmadi",
-        )
-        session.add(log)
-
     user.last_active = datetime.utcnow()
 
-    # ── ASOSIY o'zgarishni DARHOL saqlaymiz ──────────────────────────────
-    # Reja statusi + XP + streak + ScoreLog — eng muhim qism. Alohida commit
-    # qilamiz; keyingi (discipline/achievement) bosqichlarda xato bo'lsa ham
-    # "bajardim" har doim saqlanadi.
+    if new_status == PlanStatus.done:
+        out.xp_gained = base
+        out.score_change = base
+        session.add(ScoreLog(
+            user_id=user.id, plan_id=plan.id, score_change=base,
+            reason=f"✅ '{plan.title}' bajarildi",
+        ))
+    elif new_status == PlanStatus.failed:
+        out.score_change = -3
+        session.add(ScoreLog(
+            user_id=user.id, plan_id=plan.id, score_change=-3,
+            reason=f"❌ '{plan.title}' bajarilmadi",
+        ))
+
+    # ASOSIY o'zgarishni DARHOL saqlaymiz
     try:
         await session.commit()
     except Exception:
@@ -362,69 +349,62 @@ async def reward_completion(
         try:
             res_p = await session.execute(select(Plan).where(Plan.id == plan.id))
             p2 = res_p.scalar_one_or_none()
-            if p2 and p2.status == PlanStatus.pending:
-                p2.status = PlanStatus.done if is_done else PlanStatus.failed
+            if p2:
+                p2.status = new_status
                 await session.commit()
         except Exception:
             await session.rollback()
         out.discipline_score = user.discipline_score or 50
         return out
 
-    if not is_done:
-        try:
-            out.discipline_score = await _recompute_discipline_score(session, user)
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            out.discipline_score = user.discipline_score or 50
-        return out
-
-    # ── BEST-EFFORT qo'shimchalar (har biri mustaqil) ──
+    # BEST-EFFORT: XP/level
     try:
-        today = _today()
-        pending_today = await session.scalar(
-            select(func.count(Plan.id)).where(
-                and_(
-                    Plan.user_id == user.id,
-                    Plan.plan_date == today,
-                    Plan.status == PlanStatus.pending,
-                    Plan.id != plan.id,
-                )
-            )
-        ) or 0
-        total_today = await session.scalar(
-            select(func.count(Plan.id)).where(
-                and_(Plan.user_id == user.id, Plan.plan_date == today)
-            )
-        ) or 0
-        if total_today >= 2 and pending_today == 0:
-            out.perfect_day = True
-            user.perfect_days = (user.perfect_days or 0) + 1
-            bonus = 15
-            user.xp += bonus
-            user.weekly_xp = (user.weekly_xp or 0) + bonus
-            out.xp_gained += bonus
-            new_level = level_for_xp(user.xp)
-            if new_level > user.level:
-                out.leveled_up = True
-                user.level = new_level
-                out.new_level = new_level
-            existing = await session.scalar(
-                select(Achievement).where(
-                    and_(Achievement.user_id == user.id, Achievement.code == "perfect_day")
-                )
-            )
-            if not existing:
-                row = Achievement(
-                    user_id=user.id, code="perfect_day",
-                    title="Mukammal kun", icon="✨", rarity="rare",
-                )
-                session.add(row)
-                out.new_unlocks.append(row)
-            await session.commit()
+        prev_level = user.level or 1
+        await _recompute_xp_and_score(session, user)
+        out.new_level = user.level
+        out.leveled_up = user.level > prev_level
+        await session.commit()
     except Exception:
         await session.rollback()
 
+    # Perfect day (faqat done)
+    if became_done:
+        try:
+            today = _today()
+            pending_today = await session.scalar(
+                select(func.count(Plan.id)).where(
+                    and_(
+                        Plan.user_id == user.id,
+                        Plan.plan_date == today,
+                        Plan.status == PlanStatus.pending,
+                    )
+                )
+            ) or 0
+            total_today = await session.scalar(
+                select(func.count(Plan.id)).where(
+                    and_(Plan.user_id == user.id, Plan.plan_date == today)
+                )
+            ) or 0
+            if total_today >= 2 and pending_today == 0:
+                out.perfect_day = True
+                user.perfect_days = (user.perfect_days or 0) + 1
+                existing = await session.scalar(
+                    select(Achievement).where(
+                        and_(Achievement.user_id == user.id, Achievement.code == "perfect_day")
+                    )
+                )
+                if not existing:
+                    row = Achievement(
+                        user_id=user.id, code="perfect_day",
+                        title="Mukammal kun", icon="✨", rarity="rare",
+                    )
+                    session.add(row)
+                    out.new_unlocks.append(row)
+                await session.commit()
+        except Exception:
+            await session.rollback()
+
+    # Discipline (har doim)
     try:
         out.discipline_score = await _recompute_discipline_score(session, user)
         await session.commit()
@@ -432,14 +412,29 @@ async def reward_completion(
         await session.rollback()
         out.discipline_score = user.discipline_score or 50
 
-    try:
-        more = await _check_unlocks(session, user)
-        out.new_unlocks.extend(more)
-        await session.commit()
-    except Exception:
-        await session.rollback()
+    # Achievements (faqat done)
+    if became_done:
+        try:
+            more = await _check_unlocks(session, user)
+            out.new_unlocks.extend(more)
+            await session.commit()
+        except Exception:
+            await session.rollback()
 
     return out
+
+
+async def reward_completion(
+    session: AsyncSession,
+    user: User,
+    plan: Plan,
+    is_done: bool,
+) -> CompletionReward:
+    """Backward-compat shim — har qanday holat o'tishini set_plan_status bajaradi."""
+    return await set_plan_status(
+        session, user, plan,
+        PlanStatus.done if is_done else PlanStatus.failed,
+    )
 
 
 # ─────────────────────────────────────────────────────────────

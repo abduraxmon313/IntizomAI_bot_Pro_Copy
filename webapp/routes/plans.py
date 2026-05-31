@@ -145,14 +145,11 @@ async def edit_plan(
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
-    # Agar reja "done" yoki "failed" deb belgilansa — gamification dvigatelini
-    # ishga tushiramiz (XP, streak, discipline score, achievements yangilanadi).
-    # Bu Mini App'dagi belgilash ham botdagidek hisoblanishini ta'minlaydi.
-    if body.status in ("done", "failed"):
+    # Status o'zgartirish (done / failed / pending) — toggle/qayta belgilash.
+    if body.status in ("done", "failed", "pending"):
         from bot.models.plan import Plan, PlanStatus
         from sqlalchemy import and_, select
-        from bot.services.gamification_service import reward_completion
-        from datetime import date as _date
+        from bot.services.gamification_service import set_plan_status
         from bot.config import TIMEZONE
         from datetime import datetime as _dt
 
@@ -163,28 +160,32 @@ async def edit_plan(
         if not plan:
             raise HTTPException(status_code=404, detail="Reja topilmadi")
 
-        # O'TGAN KUN tekshiruvi: o'tib ketgan kundagi rejani belgilab bo'lmaydi.
-        today = _dt.now(TIMEZONE).date()
-        if plan.plan_date and plan.plan_date < today:
-            raise HTTPException(
-                status_code=409,
-                detail="O'tib ketgan kundagi rejani belgilab bo'lmaydi.",
-            )
+        # O'TGAN KUN tekshiruvi: faqat "done/failed" deb belgilashda.
+        # ("pending" — belgilashni bekor qilish — har doim ruxsat.)
+        if body.status in ("done", "failed"):
+            today = _dt.now(TIMEZONE).date()
+            if plan.plan_date and plan.plan_date < today:
+                raise HTTPException(
+                    status_code=409,
+                    detail="O'tib ketgan kundagi rejani belgilab bo'lmaydi.",
+                )
 
-        # reward_completion endi asosiy statusni o'zi (alohida) commit qiladi,
-        # shuning uchun bu yerda qo'shimcha xatolik bilan kurashish shart emas.
-        if plan.status == PlanStatus.pending:
-            await reward_completion(session, user, plan, is_done=(body.status == "done"))
+        target = {
+            "done": PlanStatus.done,
+            "failed": PlanStatus.failed,
+            "pending": PlanStatus.pending,
+        }[body.status]
+        await set_plan_status(session, user, plan, target)
         await session.refresh(plan)
         return _serialize(plan)
 
-    # status="pending" (belgilashni bekor qilish) yoki boshqa maydon yangilanishi
+    # Faqat boshqa maydonlar (title/desc/time) yangilanishi
     plan = await update_plan_fields(
         session, plan_id, user.id,
         title=body.title,
         description=body.description,
         scheduled_time=body.scheduled_time,
-        status=body.status,
+        status=None,
     )
     if not plan:
         raise HTTPException(status_code=404, detail="Reja topilmadi")
