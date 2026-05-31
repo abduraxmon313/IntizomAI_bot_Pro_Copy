@@ -58,11 +58,11 @@ async def send_plan_notifications(bot):
                 await bot.send_message(
                     chat_id=user.telegram_id,
                     text=(
-                        f"⏰ <b>Vaqt bo'ldi!</b>\n\n"
+                        f"⏰ <b>Vaqt keldi!</b>\n\n"
                         f"📌 <b>{plan.title}</b>\n"
                         f"🕐 {plan.scheduled_time}\n\n"
-                        f"✅ Bajarsang <b>+{plan.score_value} XP</b>\n"
-                        f"❌ Aks holda streakingga ta'sir qiladi"
+                        f"✅ Hoziroq bajar — <b>+{plan.score_value} XP</b> seni kutmoqda\n"
+                        f"🔥 Streakingni uzma!"
                     ),
                     parse_mode="HTML",
                     reply_markup=done_failed_keyboard(plan.id),
@@ -227,13 +227,16 @@ async def send_daily_summary(bot):
                 await bot.send_message(
                     chat_id=user.telegram_id,
                     text=(
-                        f"🌙 <b>Kunlik hisobot</b>\n\n"
+                        f"🌙 <b>Kun yakuni</b>\n"
+                        f"━━━━━━━━━━━━━\n"
                         f"✅ Bajarildi: <b>{len(done)} ta</b>\n"
                         f"❌ Bajarilmadi: <b>{len(failed)} ta</b>\n"
-                        f"⏳ Eslatilmadi: <b>{len(pending)} ta</b>\n\n"
-                        f"⭐ XP: <b>{user.xp or 0}</b>\n"
+                        f"⏳ Qoldi: <b>{len(pending)} ta</b>\n"
+                        f"━━━━━━━━━━━━━\n"
+                        f"⚡️ XP: <b>{user.xp or 0}</b>\n"
                         f"🔥 Streak: <b>{user.streak} kun</b>\n"
-                        f"💎 Discipline: <b>{user.discipline_score or 50}/100</b>"
+                        f"💎 Discipline: <b>{user.discipline_score or 50}/100</b>\n\n"
+                        f"<i>Ertaga yana zo'r bo'lamiz 🚀</i>"
                     ),
                     parse_mode="HTML", reply_markup=kb,
                 )

@@ -49,15 +49,16 @@ async def start_handler(message: Message, session: AsyncSession):
 
     if not user.onboarded:
         text = (
-            "👋 <b>Salom, " + (user.full_name or "do'st") + "!</b>\n\n"
-            "Men <b>Intizom AI</b> — sening shaxsiy intizom OS'ing.\n\n"
-            "Men sen bilan birga:\n"
-            "🎯 Maqsadlaringni rejaga aylantiraman\n"
-            "🔥 Streakni saqlayman\n"
-            "⚡ XP va darajalar bilan o'sishingni ko'rsataman\n"
-            "🧠 Aqlli tahlil qilib, ortga qaytaraman\n\n"
-            "<b>Boshlash uchun</b> — bugun nima qilmoqchisan?\n"
-            "Ovoz yoki matn bilan ayting:\n"
+            "✨ <b>Salom, " + (user.full_name or "do'st") + "!</b>\n\n"
+            "Men <b>Intizom AI</b> — sening cho'ntagingdagi intizom murabbiying. 🚀\n\n"
+            "Men bilan birga sen:\n"
+            "🎯 Maqsadlaringni aniq rejaga aylantirasan\n"
+            "🔥 Har kuni streak yig'ib, izchillik quroying\n"
+            "⚡️ XP va darajalar bilan o'sishingni ko'rasan\n"
+            "💎 Discipline kuchingni 100 ballik shkalada kuzatasan\n"
+            "🧠 Shaxsiy AI tahlil va motivatsiya olasan\n\n"
+            "<b>Keling, boshlaymiz!</b> Bugun nima qilmoqchisan?\n"
+            "🎤 Ovoz yoki ✍️ matn bilan ayting:\n"
             "<i>«Soat 7 da turaman, 9 da kitob o'qiyman»</i>"
         )
     else:
@@ -67,13 +68,13 @@ async def start_handler(message: Message, session: AsyncSession):
         bar_empty = "▱" * (10 - len(bar_filled))
         name = user.full_name or "do'st"
         text = (
-            f"{emoji} <b>Salom, {name}!</b>\n\n"
-            f"📊 <b>{rank}</b> — Daraja {lvl}\n"
+            f"✨ <b>Salom, {name}!</b>\n\n"
+            f"{emoji} <b>{rank}</b> · Daraja {lvl}\n"
             f"<code>{bar_filled}{bar_empty}</code> {pct}%\n\n"
             f"🔥 Streak: <b>{user.streak or 0} kun</b>\n"
             f"💎 Discipline: <b>{user.discipline_score or 50}/100</b>\n"
-            f"⭐ XP: <b>{user.xp or 0}</b>\n\n"
-            "Bugun nima qilamiz?"
+            f"⚡️ XP: <b>{user.xp or 0}</b>\n\n"
+            "<b>Bugun nimani uddalaymiz?</b> 👇"
         )
 
     await message.answer(
@@ -87,14 +88,14 @@ async def start_handler(message: Message, session: AsyncSession):
     if webapp_kb:
         if is_premium:
             promo_text = (
-                "🚀 <b>Mini App</b> — kalendar, statistika, AI coach.\n"
-                f"💎 Premium faol — {days_left(user)} kun qoldi."
+                "🚀 <b>Mini App</b> — kalendar, statistika va shaxsiy AI Coach.\n"
+                f"👑 Premium faol — <b>{days_left(user)} kun</b> qoldi. Bahridan to'liq foydalan!"
             )
         else:
             promo_text = (
-                "🚀 <b>Mini App</b> — kalendar, statistika, AI coach.\n\n"
-                "🔒 Mini App <b>Premium</b> imkoniyat. Ochish uchun obuna kerak.\n"
-                "Tugmani bossangiz, Mini App ichida obuna haqida ma'lumot chiqadi."
+                "🚀 <b>Mini App</b> — kalendar, statistika va AI Coach bir joyda.\n\n"
+                "👑 Bu <b>Premium</b> imkoniyat. Ochish uchun obuna kerak.\n"
+                "Tugmani bossang, ichida obuna shartlari ko'rinadi 👇"
             )
         await message.answer(
             promo_text,
@@ -119,11 +120,11 @@ async def home_handler(callback: CallbackQuery, session: AsyncSession):
     await callback.message.edit_text(
         f"🏠 <b>Bosh sahifa</b>\n\n"
         f"{emoji} <b>{user.full_name}</b>\n"
-        f"📊 {rank} — Daraja {lvl}\n"
+        f"🏅 {rank} · Daraja {lvl}\n"
         f"<code>{bar_filled}{bar_empty}</code> {pct}%\n\n"
         f"🔥 Streak: <b>{user.streak or 0}</b> kun\n"
         f"💎 Discipline: <b>{user.discipline_score or 50}/100</b>\n"
-        f"⭐ XP: <b>{user.xp or 0}</b>",
+        f"⚡️ XP: <b>{user.xp or 0}</b>",
         parse_mode="HTML",
         reply_markup=main_menu_keyboard(),
     )

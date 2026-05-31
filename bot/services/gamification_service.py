@@ -61,14 +61,14 @@ def xp_progress(xp: int) -> tuple[int, int, int, int]:
 #  RANK TITLES — identity attachment
 # ─────────────────────────────────────────────────────────────
 RANKS = [
-    (1,  "🌱 Boshlovchi",   "🌱"),
-    (3,  "🔰 O'rganuvchi",  "🔰"),
-    (5,  "⚡ Faol",          "⚡"),
-    (8,  "🔥 Disciplined",   "🔥"),
-    (12, "💎 Intizomli",     "💎"),
-    (18, "🏆 Ustoz",         "🏆"),
-    (25, "👑 Legend",        "👑"),
-    (35, "🌌 Mythic",        "🌌"),
+    (1,  "Boshlovchi",   "🌱"),
+    (3,  "O'rganuvchi",  "🔰"),
+    (5,  "Faol",         "⚡"),
+    (8,  "Izchil",       "🔥"),
+    (12, "Intizomli",    "💎"),
+    (18, "Ustoz",        "🏆"),
+    (25, "Afsona",       "👑"),
+    (35, "Mifik",        "🌌"),
 ]
 
 

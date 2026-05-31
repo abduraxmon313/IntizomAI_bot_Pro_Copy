@@ -27,36 +27,36 @@ async def build_report_text(session, user) -> str:
 
     today_str = datetime.now(TIMEZONE).strftime('%d.%m.%Y')
 
-    text = f"📊 <b>Bugungi hisobot</b>\n"
-    text += f"📅 {today_str}\n\n"
+    text = f"📊 <b>Bugungi hisobot</b>  ·  {today_str}\n"
+    text += "━━━━━━━━━━━━━\n\n"
 
     if done:
-        text += f"✅ <b>Bajarildi ({len(done)} ta):</b>\n"
+        text += f"✅ <b>Bajarildi ({len(done)} ta)</b>\n"
         for p in done:
-            text += f"  • {p.title} <i>(+{p.score_value}⭐)</i>\n"
+            text += f"   • {p.title}  <i>+{p.score_value} XP</i>\n"
         text += "\n"
 
     if failed:
-        text += f"❌ <b>Bajarilmadi ({len(failed)} ta):</b>\n"
+        text += f"❌ <b>Bajarilmadi ({len(failed)} ta)</b>\n"
         for p in failed:
-            text += f"  • {p.title} <i>(-3⭐)</i>\n"
+            text += f"   • {p.title}  <i>-3 XP</i>\n"
         text += "\n"
 
     if pending:
-        text += f"⏳ <b>Kutilmoqda ({len(pending)} ta):</b>\n"
+        text += f"⬜️ <b>Qoldi ({len(pending)} ta)</b>\n"
         for p in pending:
             time_str = p.scheduled_time if p.scheduled_time else "vaqtsiz"
-            text += f"  • {p.title} <i>({time_str})</i>\n"
+            text += f"   • {p.title}  <i>({time_str})</i>\n"
         text += "\n"
 
     if not plans:
-        text += "📭 Bugun hech qanday reja yo'q.\n\n"
+        text += "📭 Bugun hali reja yo'q.\n\n"
 
-    text += f"━━━━━━━━━━━━━━━\n"
-    text += f"⭐ Bugungi ball: <b>{today_score:+d}</b>\n"
+    text += f"━━━━━━━━━━━━━\n"
+    text += f"⚡️ Bugungi XP: <b>{today_score:+d}</b>\n"
     text += f"🏆 Umumiy ball: <b>{user.total_score}</b>\n"
     text += f"🔥 Streak: <b>{user.streak} kun</b>\n"
-    text += f"📊 Status: <b>{status}</b>"
+    text += f"🏅 Status: <b>{status}</b>"
 
     return text
 

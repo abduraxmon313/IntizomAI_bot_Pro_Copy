@@ -150,9 +150,8 @@ async def process_next_no_time_plan(message_or_callback, state: FSMContext, curr
 async def add_plan_btn(message: Message, state: FSMContext):
     await message.answer(
         "➕ <b>Yangi reja</b>\n\n"
-        "Bugun nima qilmoqchi ekanligingizni yozing yoki "
-        "🎤 ovozli xabar yuboring.\n\n"
-        "<i>Masalan: 'Soat 7 da turaman, 10 da sport qilaman'</i>",
+        "Bugun nimani uddalamoqchisan? 🎤 Ovoz yoki ✍️ matn bilan ayt.\n\n"
+        "<i>Masalan: «Soat 7 da turaman, 10 da sport qilaman»</i>",
         parse_mode="HTML"
     )
     await state.set_state(PlanState.waiting_for_plan)
@@ -162,8 +161,7 @@ async def add_plan_btn(message: Message, state: FSMContext):
 async def add_plan_callback(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
         "➕ <b>Yangi reja</b>\n\n"
-        "Bugun nima qilmoqchi ekanligingizni yozing yoki "
-        "🎤 ovozli xabar yuboring.",
+        "Bugun nimani uddalamoqchisan? 🎤 Ovoz yoki ✍️ matn bilan ayt.",
         parse_mode="HTML"
     )
     await state.set_state(PlanState.waiting_for_plan)
@@ -187,7 +185,7 @@ async def handle_voice_any(message: Message, state: FSMContext, session: AsyncSe
     if not await _ai_rate_ok(message, session):
         return
 
-    processing_msg = await message.answer("⏳ Tahlil qilinmoqda...")
+    processing_msg = await message.answer("🧠 Tahlil qilyapman...")
 
     try:
         file = await message.bot.get_file(message.voice.file_id)
@@ -265,7 +263,7 @@ async def handle_text_any(message: Message, state: FSMContext, session: AsyncSes
     if not await _ai_rate_ok(message, session):
         return
 
-    processing_msg = await message.answer("⏳ Tahlil qilinmoqda...")
+    processing_msg = await message.answer("🧠 Tahlil qilyapman...")
 
     try:
         plans = await extract_plans_from_text(message.text)
@@ -358,10 +356,13 @@ async def confirm_plans_handler(callback: CallbackQuery, state: FSMContext, sess
     if not limit.allowed:
         await state.clear()
         await callback.message.edit_text(
-            "🔒 <b>Kunlik bepul limit tugadi</b>\n\n"
-            f"Bepul rejimda kuniga <b>{limit.limit} tagacha</b> reja qo'shish mumkin.\n"
-            f"Bugun ishlatilgan: <b>{limit.used}/{limit.limit}</b>\n\n"
-            "💎 <b>Premium</b> bilan cheksiz reja, Mini App va boshqa imkoniyatlar ochiladi.",
+            "🔒 <b>Bugungi bepul limit tugadi</b>\n\n"
+            f"Bepul rejimda kuniga <b>{limit.limit} tagacha</b> reja qo'shasiz.\n"
+            f"Bugun ishlatildi: <b>{limit.used}/{limit.limit}</b>\n\n"
+            "👑 <b>Premium</b> bilan ochiladi:\n"
+            "♾ Cheksiz reja va maqsadlar\n"
+            "🚀 Mini App — kalendar, statistika, AI Coach\n"
+            "🛡 Streak Freeze va chuqur tahlil",
             parse_mode="HTML",
             reply_markup=buy_subscription_keyboard(),
         )
@@ -379,11 +380,11 @@ async def confirm_plans_handler(callback: CallbackQuery, state: FSMContext, sess
     all_plans = await get_today_plans(session, user)
 
     await callback.message.edit_text(
-        f"✅ <b>Rejalar saqlandi!</b>\n\n{format_plan_list(all_plans)}",
+        f"✨ <b>Saqlandi! Omad tilayman 🚀</b>\n\n{format_plan_list(all_plans)}",
         parse_mode="HTML",
         reply_markup=plan_list_actions_keyboard()
     )
-    await callback.answer("Saqlandi! ✅")
+    await callback.answer("Saqlandi ✨")
 
 
 @router.callback_query(F.data == "retry_plans")
@@ -459,20 +460,21 @@ async def plan_detail_handler(callback: CallbackQuery, session: AsyncSession):
         return
 
     status_text = {
-        "pending": "⏳ Kutilmoqda",
+        "pending": "⬜️ Kutilmoqda",
         "done": "✅ Bajarildi",
         "failed": "❌ Bajarilmadi"
     }
-    time_str = f"🕐 {plan.scheduled_time}" if plan.scheduled_time else "🕐 Eslatmasiz"
+    time_str = f"🕐 {plan.scheduled_time}" if plan.scheduled_time else "🕐 Vaqtsiz"
 
     text = (
-        f"📌 <b>{plan.title}</b>\n\n"
+        f"📌 <b>{plan.title}</b>\n"
+        f"━━━━━━━━━━━━━\n"
         f"{time_str}\n"
-        f"⭐ Ball: <b>{plan.score_value}</b>\n"
-        f"📊 Holat: <b>{status_text.get(plan.status.value, '⏳')}</b>"
+        f"⚡️ Mukofot: <b>+{plan.score_value} XP</b>\n"
+        f"📊 Holat: <b>{status_text.get(plan.status.value, '⬜️ Kutilmoqda')}</b>"
     )
     if plan.description:
-        text += f"\n📝 {plan.description}"
+        text += f"\n📝 <i>{plan.description}</i>"
 
     await callback.message.edit_text(
         text,
