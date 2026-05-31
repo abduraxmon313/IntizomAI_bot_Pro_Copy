@@ -1,3 +1,5 @@
+import html
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +8,6 @@ from datetime import datetime
 from bot.config import TIMEZONE
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.plan_service import get_today_plans
-from bot.services.score_service import get_today_score
 from bot.services.admin_service import get_user_status
 from bot.models.plan import Plan, PlanStatus
 from bot.keyboards.plan_keys import back_to_home_keyboard
@@ -17,80 +18,86 @@ UZ_WEEKDAYS = [
     "Dushanba", "Seshanba", "Chorshanba", "Payshanba",
     "Juma", "Shanba", "Yakshanba",
 ]
+UZ_MONTHS = [
+    "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+    "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
+]
 
 
-def _progress_bar(done: int, total: int, length: int = 10) -> str:
-    """To'ladigan progress chizig'i: ▰▰▰▱▱▱▱▱▱▱"""
-    if total <= 0:
-        return "▱" * length
-    filled = max(0, min(length, round(done * length / total)))
-    return "▰" * filled + "▱" * (length - filled)
+def _squares(pct: int, length: int = 10) -> str:
+    """Rangli kvadrat progress: 🟩🟩🟩⬜️⬜️ ..."""
+    filled = max(0, min(length, round(pct / 100 * length)))
+    return "🟩" * filled + "⬜️" * (length - filled)
 
 
 def _closing_line(done: int, total: int) -> str:
-    """Bajarish darajasiga qarab premium motivatsion yakun."""
+    """Holatga mos premium motivatsion yakun."""
     if total <= 0:
-        return "🌱 <i>Bitta kichik reja qo'shib, kuningni boshla.</i>"
-    pct = done * 100 / total
-    if pct >= 100:
-        return "✨ <i>Mukammal kun! Hammasini uddalading.</i>"
-    if pct >= 60:
-        return "💪 <i>Zo'r ketyapsan — yakuniga yetkaz!</i>"
+        return "🌱 <i>Bitta kichik reja qo'sh — kun shu yerdan boshlanadi.</i>"
+    left = total - done
+    if done >= total:
+        return "🏆 <i>Mukammal kun! Bugun sen 100% bo'lding.</i>"
+    if left == 1:
+        return "🔥 <i>Yana atigi bittasi qoldi — yakuniga yetkaz!</i>"
+    if done / total >= 0.5:
+        return "💪 <i>Zo'r ketyapsan — oz qoldi!</i>"
     if done > 0:
-        return "🌱 <i>Yaxshi boshlanish — qolganini ham uddalaysan.</i>"
-    return "⏳ <i>Hali ulgurasan. Bittadan boshla 🚀</i>"
+        return "🌱 <i>Yaxshi boshlanish. Yana bittasini uddala.</i>"
+    return "⏳ <i>Hali ulgurasan — bittadan boshla 🚀</i>"
 
 
 async def build_report_text(session, user) -> str:
     plans = await get_today_plans(session, user)
 
     done = [p for p in plans if p.status == PlanStatus.done]
-    failed = [p for p in plans if p.status == PlanStatus.failed]
-    pending = [p for p in plans if p.status == PlanStatus.pending]
 
-    # Bugungi ballarni hisoblash (Tashkent vaqti bo'yicha)
-    today_score = await get_today_score(session, user)
     status = get_user_status(user.total_score, user.streak)
 
     now = datetime.now(TIMEZONE)
-    today_str = now.strftime('%d.%m.%Y')
-    weekday = UZ_WEEKDAYS[now.weekday()]
+    date_str = f"{now.day}-{UZ_MONTHS[now.month - 1]} · {UZ_WEEKDAYS[now.weekday()]}"
 
     total = len(plans)
     done_n = len(done)
     pct = round(done_n * 100 / total) if total else 0
+    # Bugun haqiqatan ishlab topilgan XP (bajarilgan rejalardan) — ScoreLog
+    # qayta-belgilashlaridan shishib ketmaydigan, aniq qiymat.
+    today_xp = sum(p.score_value or 0 for p in done)
 
-    text = "📊 <b>Bugungi hisobot</b>\n"
-    text += f"🗓 {today_str} · {weekday}\n\n"
+    # ── Sarlavha ────────────────────────────────────────────
+    text = f"✨ <b>Kun yakuni</b>\n<i>{date_str}</i>\n\n"
 
     if total:
-        text += f"<code>{_progress_bar(done_n, total)}</code>  {done_n}/{total} · {pct}%\n\n"
+        text += f"{_squares(pct)}  <b>{pct}%</b>\n"
+        text += f"✅ <b>{done_n} / {total}</b> reja bajarildi\n\n"
 
-    if done:
-        text += f"✅ <b>Bajarildi · {len(done)}</b>\n"
-        for p in done:
-            text += f"   • {p.title}  <i>+{p.score_value} XP</i>\n"
-        text += "\n"
+        # ── Vazifalar kartasi (blockquote) ──────────────────
+        icon = {
+            PlanStatus.done: "✅",
+            PlanStatus.failed: "⚪️",
+            PlanStatus.pending: "⬜️",
+        }
+        rows = []
+        for p in plans:
+            title = html.escape(p.title or "")
+            line = f"{icon.get(p.status, '⬜️')} {title}"
+            if p.status == PlanStatus.pending and p.scheduled_time:
+                line += f"  <i>{p.scheduled_time}</i>"
+            rows.append(line)
+        body = "\n".join(rows)
+        if len(rows) > 10:
+            text += f"<blockquote expandable>{body}</blockquote>\n\n"
+        else:
+            text += f"<blockquote>{body}</blockquote>\n\n"
+    else:
+        text += "📭 <i>Bugun hali reja yo'q.</i>\n\n"
 
-    if failed:
-        text += f"❌ <b>Bajarilmadi · {len(failed)}</b>\n"
-        for p in failed:
-            text += f"   • {p.title}\n"
-        text += "\n"
-
-    if pending:
-        text += f"⬜️ <b>Qoldi · {len(pending)}</b>\n"
-        for p in pending:
-            time_str = p.scheduled_time if p.scheduled_time else "vaqtsiz"
-            text += f"   • {p.title}  <i>{time_str}</i>\n"
-        text += "\n"
-
-    if not plans:
-        text += "📭 Bugun hali reja yo'q.\n\n"
-
-    text += "━━━━━━━━━━━━━\n"
-    text += f"⚡️ Bugungi XP: <b>{today_score:+d}</b>   🔥 <b>{user.streak} kun</b>\n"
-    text += f"🏆 Umumiy: <b>{user.total_score} XP</b>   ·   {status}\n\n"
+    # ── Statistika qatori ───────────────────────────────────
+    text += (
+        f"🔥 <b>{user.streak}</b> kun   "
+        f"⚡️ <b>+{today_xp}</b> XP   "
+        f"🏆 <b>{user.total_score}</b> jami\n"
+    )
+    text += f"{status}\n\n"
     text += _closing_line(done_n, total)
 
     return text
