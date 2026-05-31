@@ -321,49 +321,51 @@ async def _run_gamification(user_id: int, became_done: bool) -> CompletionReward
             out.new_streak = u.streak
         u.last_active = datetime.utcnow()
 
+        # ── XP/streak/discipline — ENG MUHIM, alohida commit ──
         await _recompute_xp_and_score(s, u)
         out.new_level = u.level
         out.leveled_up = u.level > prev_level
-
-        if became_done:
-            today = _today()
-            pending_today = await s.scalar(
-                select(func.count(Plan.id)).where(
-                    and_(
-                        Plan.user_id == u.id,
-                        Plan.plan_date == today,
-                        Plan.status == PlanStatus.pending,
-                    )
-                )
-            ) or 0
-            total_today = await s.scalar(
-                select(func.count(Plan.id)).where(
-                    and_(Plan.user_id == u.id, Plan.plan_date == today)
-                )
-            ) or 0
-            if total_today >= 2 and pending_today == 0:
-                out.perfect_day = True
-                u.perfect_days = (u.perfect_days or 0) + 1
-                existing = await s.scalar(
-                    select(Achievement).where(
-                        and_(Achievement.user_id == u.id,
-                             Achievement.code == "perfect_day")
-                    )
-                )
-                if not existing:
-                    s.add(Achievement(
-                        user_id=u.id, code="perfect_day",
-                        title="Mukammal kun", icon="✨", rarity="rare",
-                    ))
-                    out.perfect_day = True
-
         out.discipline_score = await _recompute_discipline_score(s, u)
-
-        if became_done:
-            more = await _check_unlocks(s, u)
-            out.new_unlocks.extend(more)
-
         await s.commit()
+
+        # ── Perfect day + achievements — best-effort, alohida commit ──
+        # (Bu yerda xato bo'lsa ham yuqoridagi XP/streak saqlanib qoladi.)
+        if became_done:
+            try:
+                today = _today()
+                pending_today = await s.scalar(
+                    select(func.count(Plan.id)).where(
+                        and_(
+                            Plan.user_id == u.id,
+                            Plan.plan_date == today,
+                            Plan.status == PlanStatus.pending,
+                        )
+                    )
+                ) or 0
+                total_today = await s.scalar(
+                    select(func.count(Plan.id)).where(
+                        and_(Plan.user_id == u.id, Plan.plan_date == today)
+                    )
+                ) or 0
+                if total_today >= 2 and pending_today == 0:
+                    out.perfect_day = True
+                    u.perfect_days = (u.perfect_days or 0) + 1
+                    existing = await s.scalar(
+                        select(Achievement).where(
+                            and_(Achievement.user_id == u.id,
+                                 Achievement.code == "perfect_day")
+                        )
+                    )
+                    if not existing:
+                        s.add(Achievement(
+                            user_id=u.id, code="perfect_day",
+                            title="Mukammal kun", icon="✨", rarity="rare",
+                        ))
+                more = await _check_unlocks(s, u)
+                out.new_unlocks.extend(more)
+                await s.commit()
+            except Exception:
+                await s.rollback()
     return out
 
 
@@ -510,13 +512,60 @@ async def _backfill_user_stats(session: AsyncSession, user: User) -> None:
 # ─────────────────────────────────────────────────────────────
 #  PUBLIC: snapshot for webapp
 # ─────────────────────────────────────────────────────────────
-async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
-    # Backfill: agar foydalanuvchida bajarilgan rejalar bor-u, lekin XP/discipline
-    # hali hisoblanmagan bo'lsa (eski rejalar gamification'dan oldin bajarilgan),
-    # ularni mavjud ma'lumotdan tiklaymiz — shunda Asosiy sahifa har bir
-    # foydalanuvchi uchun o'ziga mos qiymat ko'rsatadi.
+async def _backfill_user_stats_isolated(user_id: int) -> None:
+    """Backfill ALOHIDA sessiyada — request sessiyasini buzmasligi uchun."""
+    from database.db import AsyncSessionLocal
     try:
-        await _backfill_user_stats(session, user)
+        async with AsyncSessionLocal() as s:
+            u = await s.get(User, user_id)
+            if u is None or (u.xp or 0) > 0:
+                return
+            res = await s.execute(
+                select(Plan).where(
+                    and_(Plan.user_id == u.id, Plan.status == PlanStatus.done)
+                )
+            )
+            done_plans = res.scalars().all()
+            if not done_plans:
+                await _recompute_discipline_score(s, u)
+                await s.commit()
+                return
+            total_xp = sum(max(1, p.score_value or 5) for p in done_plans)
+            u.xp = total_xp
+            u.total_score = max(u.total_score or 0, total_xp)
+            u.level = level_for_xp(u.xp)
+            title, emoji = rank_for_level(u.level)
+            u.rank_title = title
+            u.avatar_emoji = emoji
+            done_dates = sorted({p.plan_date for p in done_plans if p.plan_date})
+            if done_dates:
+                u.last_completed_date = done_dates[-1]
+                today = _today()
+                streak = 0
+                date_set = set(done_dates)
+                if done_dates[-1] >= today - timedelta(days=1):
+                    d = done_dates[-1]
+                    while d in date_set:
+                        streak += 1
+                        d = d - timedelta(days=1)
+                u.streak = streak
+                u.longest_streak = max(u.longest_streak or 0, streak)
+            await _recompute_discipline_score(s, u)
+            await s.commit()
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────────────────────
+#  PUBLIC: snapshot for webapp
+# ─────────────────────────────────────────────────────────────
+async def build_user_snapshot(session: AsyncSession, user: User) -> dict:
+    # Backfill ALOHIDA sessiyada bajariladi — agar u xato bersa ham, quyidagi
+    # so'rovlar (today_plans, achievements) hech qachon buzilmaydi. So'ngra
+    # request sessiyasidagi user obyektini yangilaymiz.
+    await _backfill_user_stats_isolated(user.id)
+    try:
+        await session.refresh(user)
     except Exception:
         pass
 
