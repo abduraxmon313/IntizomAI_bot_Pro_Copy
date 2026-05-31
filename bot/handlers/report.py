@@ -1,14 +1,14 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from datetime import date
+from datetime import datetime
 
+from bot.config import TIMEZONE
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.plan_service import get_today_plans
+from bot.services.score_service import get_today_score
 from bot.services.admin_service import get_user_status
 from bot.models.plan import Plan, PlanStatus
-from bot.models.score_log import ScoreLog
 from bot.keyboards.plan_keys import back_to_home_keyboard
 
 router = Router()
@@ -21,20 +21,14 @@ async def build_report_text(session, user) -> str:
     failed = [p for p in plans if p.status == PlanStatus.failed]
     pending = [p for p in plans if p.status == PlanStatus.pending]
 
-    # Bugungi ballarni hisoblash
-    score_result = await session.execute(
-        select(func.sum(ScoreLog.score_change)).where(
-            and_(
-                ScoreLog.user_id == user.id,
-                func.date(ScoreLog.created_at) == date.today()
-            )
-        )
-    )
-    today_score = score_result.scalar() or 0
+    # Bugungi ballarni hisoblash (Tashkent vaqti bo'yicha)
+    today_score = await get_today_score(session, user)
     status = get_user_status(user.total_score, user.streak)
 
+    today_str = datetime.now(TIMEZONE).strftime('%d.%m.%Y')
+
     text = f"📊 <b>Bugungi hisobot</b>\n"
-    text += f"📅 {date.today().strftime('%d.%m.%Y')}\n\n"
+    text += f"📅 {today_str}\n\n"
 
     if done:
         text += f"✅ <b>Bajarildi ({len(done)} ta):</b>\n"

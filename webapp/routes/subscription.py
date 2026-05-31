@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import FREE_DAILY_PLAN_LIMIT, SUBSCRIPTION_PLANS
+from webapp.security import resolve_telegram_id
 from bot.services.premium_service import get_status, format_price
 from bot.services.user_service import get_user_by_telegram_id
 from database.db import AsyncSessionLocal
@@ -56,7 +57,7 @@ def _plans_catalog() -> list[PlanOut]:
 
 @router.get("/subscription", response_model=SubscriptionOut)
 async def get_subscription(
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)

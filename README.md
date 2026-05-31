@@ -58,11 +58,29 @@ bot/
 database/
   db.py          engine + idempotent migrations
 webapp/
-  app.py         FastAPI app + bot lifespan
-  routes/        plans, goals, stats
+  app.py         FastAPI app + bot lifespan (RUN_BOT bilan boshqariladi)
+  security.py    Telegram initData HMAC tekshiruvi + rate limit + auth dependency
+  routes/        plans, goals, stats, subscription, ai
   static/        index.html (single-file SPA)
-start.py         single-process entry running both bot + server
+start.py         lokal kirish nuqtasi — uvicorn serverni ishga tushiradi (bot lifespan orqali)
 ```
+
+---
+
+## Environment variables
+
+| O'zgaruvchi | Default | Izoh |
+|---|---|---|
+| `BOT_TOKEN` | — | Telegram bot tokeni (majburiy) |
+| `OPENAI_API_KEY` | — | OpenAI kaliti (majburiy) |
+| `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS` | — | Postgres ulanishi |
+| `ADMIN_ID` | `0` | Super admin telegram_id |
+| `WEBAPP_URL` | `""` | Mini App public HTTPS manzili |
+| `PROMO_CODE` | `intizom` | Sinov promokodi |
+| `FREE_DAILY_PLAN_LIMIT` | `5` | Bepul kunlik reja limiti |
+| `FREE_AI_DAILY_LIMIT` | `3` | Bepul kunlik AI suhbat limiti |
+| `STRICT_AUTH` | `true` | **Xavfsizlik**: faqat tasdiqlangan Telegram initData'ga ruxsat. `false` qilinsa query `telegram_id` ga ham ruxsat beriladi (tavsiya etilmaydi) |
+| `RUN_BOT` | `true` | Bot shu server jarayonida ishga tushsinmi. Ko'p worker / alohida bot jarayonida `false` qiling (409 Conflict'dan saqlanish) |
 
 ---
 
@@ -72,11 +90,21 @@ start.py         single-process entry running both bot + server
 pip install -r requirements.txt
 # .env: BOT_TOKEN, OPENAI_API_KEY, DB_*, ADMIN_ID
 # optional: WEBAPP_URL=https://<your-public-https>/
+# optional: STRICT_AUTH=false  (faqat lokal/brauzer demo uchun)
 python start.py
 ```
 
+> `start.py` faqat uvicorn serverni ishga tushiradi; bot esa FastAPI
+> `lifespan` ichida bir marta ishga tushadi. Shu sabab bot ikki marta
+> polling qilmaydi (Telegram 409 Conflict bo'lmaydi).
+
 ## Deploy (Railway)
 
-`railway.json` and `Procfile` boot `uvicorn webapp.app:app`. The
-FastAPI lifespan starts the bot in the same process. Migrations
-run automatically on startup via `_run_migrations()`.
+`railway.json` va `Procfile` `uvicorn webapp.app:app` ni ishga tushiradi.
+FastAPI lifespan bot'ni xuddi shu jarayonda ishga tushiradi (`RUN_BOT=true`).
+Migratsiyalar startda `_run_migrations()` orqali avtomatik ishlaydi.
+
+> **Xavfsizlik:** `STRICT_AUTH=true` (default) bo'lganda Mini App API faqat
+> Telegram orqali ochilgan, HMAC bilan tasdiqlangan so'rovlarni qabul qiladi.
+> Agar kerak bo'lsa, Railway env'da `STRICT_AUTH=false` qilib vaqtincha
+> yumshatish mumkin (lekin bu IDOR xavfini qaytaradi).

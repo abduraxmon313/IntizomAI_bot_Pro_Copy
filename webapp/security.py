@@ -10,24 +10,32 @@ Asosiy himoyalar:
   3. Xavfsizlik header'lari (XSS, clickjacking, MIME-sniffing).
   4. So'rov hajmi cheklovi (katta payload bilan hujumdan saqlanish).
 
-Eslatma: initData tekshiruvi STRICT_AUTH=true bo'lganda majburiy bo'ladi.
-Default holatda (mavjud mijozlar bilan moslik uchun) initData bo'lsa
-tekshiriladi, bo'lmasa query telegram_id ga ruxsat beriladi — lekin
-buni production'da STRICT_AUTH=true qilib yoqish tavsiya etiladi.
+Eslatma: initData tekshiruvi STRICT_AUTH=true (default) bo'lganda majburiy.
+Bu rejimda faqat Telegram ichidan ochilgan Mini App ishlaydi (u har doim
+initData yuboradi). Brauzerda to'g'ridan-to'g'ri ochish (demo) rad etiladi.
 """
 from __future__ import annotations
 
 import hashlib
 import hmac
 import json
+import logging
 import os
 import time
 from urllib.parse import parse_qsl
 
+from fastapi import HTTPException, Request
+
 from bot.config import BOT_TOKEN
 
-# Tekshiruv qat'iyligini .env orqali boshqarish
-STRICT_AUTH = os.getenv("STRICT_AUTH", "false").strip().lower() in ("1", "true", "yes")
+logger = logging.getLogger(__name__)
+
+# Tekshiruv qat'iyligini muhit (env) orqali boshqarish.
+# Default = true: faqat Telegram WebApp `initData` (HMAC bilan tasdiqlangan)
+# orqali kelgan so'rovlarga ruxsat beriladi. Bu boshqa odamning telegram_id
+# sini qo'lda yuborib ma'lumotini o'qish/o'zgartirishni (IDOR) to'sadi.
+# Agar zarur bo'lsa Railway'da STRICT_AUTH=false qilib vaqtincha yumshatish mumkin.
+STRICT_AUTH = os.getenv("STRICT_AUTH", "true").strip().lower() in ("1", "true", "yes")
 
 # initData maksimal "yoshi" (sekund) — eski/qayta yuborilgan ma'lumotni rad etish
 INITDATA_MAX_AGE = int(os.getenv("INITDATA_MAX_AGE", 86400))  # 24 soat
@@ -127,21 +135,21 @@ def rate_limited(client_key: str) -> bool:
 # ─────────────────────────────────────────────────────────────
 #  FastAPI dependency: tasdiqlangan telegram_id ni aniqlash
 # ─────────────────────────────────────────────────────────────
-def resolve_telegram_id(request, telegram_id: int | None = None) -> int:
+def resolve_telegram_id(request: Request, telegram_id: int | None = None) -> int:
     """
-    So'rovdan ishonchli telegram_id ni aniqlaydi.
+    So'rovdan ishonchli telegram_id ni aniqlaydi (FastAPI dependency).
 
     Tartib:
       1. `X-Telegram-Init-Data` header bo'lsa — uni HMAC bilan tekshirib,
-         undagi user.id ni ishlatadi (eng ishonchli).
+         undagi user.id ni ishlatadi (eng ishonchli). Bu holda query'dagi
+         telegram_id E'TIBORGA OLINMAYDI — shuning uchun haqiqiy foydalanuvchini
+         boshqa id yuborib aldab bo'lmaydi.
       2. STRICT_AUTH=false bo'lsa — query'dagi telegram_id ga ruxsat beradi
-         (eski mijozlar bilan moslik uchun).
-      3. STRICT_AUTH=true bo'lsa va initData yo'q/yaroqsiz bo'lsa — rad etadi.
+         (eski mijozlar / debug uchun).
+      3. STRICT_AUTH=true (default) bo'lsa va initData yo'q/yaroqsiz bo'lsa — rad etadi.
 
-    HTTPException ko'taradi (401) agar aniqlab bo'lmasa.
+    HTTPException ko'taradi (401/400) agar aniqlab bo'lmasa.
     """
-    from fastapi import HTTPException
-
     init_data = None
     try:
         init_data = request.headers.get("x-telegram-init-data")
@@ -153,12 +161,14 @@ def resolve_telegram_id(request, telegram_id: int | None = None) -> int:
         return verified_id
 
     if STRICT_AUTH:
+        if init_data:
+            logger.warning("initData tekshiruvi muvaffaqiyatsiz (HMAC mos kelmadi).")
         raise HTTPException(
             status_code=401,
             detail="Tasdiqlanmagan so'rov. Mini App'ni Telegram orqali oching.",
         )
 
-    # Moslik rejimi: query telegram_id
+    # Moslik rejimi (STRICT_AUTH=false): query telegram_id
     if telegram_id is None or telegram_id <= 0:
         raise HTTPException(status_code=400, detail="telegram_id noto'g'ri.")
     return int(telegram_id)

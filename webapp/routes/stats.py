@@ -10,6 +10,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import TIMEZONE
+from webapp.security import resolve_telegram_id
 from bot.models.checkin import DailyCheckin
 from bot.services.coach_service import daily_quest, smart_coach_message
 from bot.services.gamification_service import build_user_snapshot
@@ -38,7 +39,10 @@ class CheckinOut(BaseModel):
 
 # ─────────────────────────────────────────────────────────────
 @router.get("/stats")
-async def get_stats(telegram_id: int, session: AsyncSession = Depends(get_session)):
+async def get_stats(
+    telegram_id: int = Depends(resolve_telegram_id),
+    session: AsyncSession = Depends(get_session),
+):
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(404, "Foydalanuvchi topilmadi")
@@ -46,7 +50,10 @@ async def get_stats(telegram_id: int, session: AsyncSession = Depends(get_sessio
 
 
 @router.get("/coach")
-async def get_coach(telegram_id: int, session: AsyncSession = Depends(get_session)):
+async def get_coach(
+    telegram_id: int = Depends(resolve_telegram_id),
+    session: AsyncSession = Depends(get_session),
+):
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(404, "Foydalanuvchi topilmadi")
@@ -54,7 +61,10 @@ async def get_coach(telegram_id: int, session: AsyncSession = Depends(get_sessio
 
 
 @router.get("/quest")
-async def get_quest(telegram_id: int, session: AsyncSession = Depends(get_session)):
+async def get_quest(
+    telegram_id: int = Depends(resolve_telegram_id),
+    session: AsyncSession = Depends(get_session),
+):
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(404, "Foydalanuvchi topilmadi")
@@ -64,7 +74,8 @@ async def get_quest(telegram_id: int, session: AsyncSession = Depends(get_sessio
 # ─────────────────────────────────────────────────────────────
 @router.get("/checkin", response_model=Optional[CheckinOut])
 async def get_today_checkin(
-    telegram_id: int, session: AsyncSession = Depends(get_session),
+    telegram_id: int = Depends(resolve_telegram_id),
+    session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
@@ -89,8 +100,8 @@ async def get_today_checkin(
 
 @router.post("/checkin", response_model=CheckinOut)
 async def save_checkin(
-    telegram_id: int,
     body: CheckinIn,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)

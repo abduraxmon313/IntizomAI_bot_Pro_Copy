@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from database.db import AsyncSessionLocal
+from webapp.security import resolve_telegram_id
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.plan_service import (
     get_today_plans,
@@ -75,7 +76,7 @@ def _serialize(p) -> PlanOut:
 
 @router.get("/plans", response_model=PlansResponse)
 async def get_user_plans(
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
@@ -103,8 +104,8 @@ async def get_user_plans(
 
 @router.post("/plans", response_model=PlanOut)
 async def add_plan(
-    telegram_id: int,
     body: PlanCreate,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
@@ -137,8 +138,8 @@ async def add_plan(
 @router.put("/plans/{plan_id}", response_model=PlanOut)
 async def edit_plan(
     plan_id: int,
-    telegram_id: int,
     body: PlanUpdate,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)
@@ -204,7 +205,7 @@ async def edit_plan(
 @router.delete("/plans/{plan_id}")
 async def remove_plan(
     plan_id: int,
-    telegram_id: int,
+    telegram_id: int = Depends(resolve_telegram_id),
     session: AsyncSession = Depends(get_session),
 ):
     user = await get_user_by_telegram_id(session, telegram_id)

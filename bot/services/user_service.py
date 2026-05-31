@@ -17,6 +17,23 @@ async def get_or_create_user(session: AsyncSession, telegram_id: int, full_name:
         session.add(user)
         await session.commit()
         await session.refresh(user)
+        return user
+
+    # Mavjud foydalanuvchi — ism/username o'zgargan bo'lsa yangilaymiz
+    changed = False
+    if full_name and user.full_name != full_name:
+        user.full_name = full_name
+        changed = True
+    if username is not None and user.username != username:
+        user.username = username
+        changed = True
+    user.last_active = datetime.utcnow()
+    try:
+        await session.commit()
+        if changed:
+            await session.refresh(user)
+    except Exception:
+        await session.rollback()
 
     return user
 
