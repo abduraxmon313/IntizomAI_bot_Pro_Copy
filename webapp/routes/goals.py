@@ -87,6 +87,49 @@ def _is_period_past(goal_type: str, period: str) -> bool:
         return False
 
 
+def _is_period_future(goal_type: str, period: str) -> bool:
+    """
+    Maqsad davri hali BOSHLANMAGANmi? (kelajakdagi davrni "bajarildi" deb
+    belgilab bo'lmaydi — vaqti kelmagan).
+      • yearly:  "2027"          -> joriy yildan katta bo'lsa kelajak
+      • monthly: "2026-07"       -> joriy oydan keyin bo'lsa kelajak
+      • weekly:  "2026-W30"      -> joriy haftadan keyin bo'lsa kelajak
+      • daily:   "2026-06-10"    -> bugundan keyin bo'lsa kelajak
+    Format noto'g'ri/aniqlanmasa — bloklamaymiz (False).
+    """
+    from datetime import datetime, date
+    from bot.config import TIMEZONE
+    try:
+        now = datetime.now(TIMEZONE)
+        today = now.date()
+        gt = (goal_type or "").lower()
+        p = (period or "").strip()
+        if not p:
+            return False
+
+        if gt == "yearly":
+            return int(p) > today.year
+
+        if gt == "monthly":
+            y, m = p.split("-")[:2]
+            y, m = int(y), int(m)
+            return (y, m) > (today.year, today.month)
+
+        if gt == "weekly":
+            y_str, w_str = p.upper().split("-W")
+            y, w = int(y_str), int(w_str)
+            iso = today.isocalendar()
+            return (y, w) > (iso[0], iso[1])
+
+        if gt == "daily":
+            d = date.fromisoformat(p)
+            return d > today
+
+        return False
+    except Exception:
+        return False
+
+
 @router.get("/goals", response_model=list[GoalOut])
 async def get_goals(
     telegram_id: int = Depends(resolve_telegram_id),
@@ -144,7 +187,7 @@ async def edit_goal(
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
-    # O'tib ketgan davr maqsadini bajarilgan deb belgilashni taqiqlaymiz.
+    # O'tib ketgan / hali boshlanmagan davr maqsadini bajarilgan deb belgilashni taqiqlaymiz.
     if body.completed:
         from bot.models.goal import Goal
         from sqlalchemy import and_, select
@@ -156,6 +199,11 @@ async def edit_goal(
             raise HTTPException(
                 status_code=409,
                 detail="O'tib ketgan davr maqsadini belgilab bo'lmaydi.",
+            )
+        if g0 and _is_period_future(g0.goal_type, g0.period):
+            raise HTTPException(
+                status_code=409,
+                detail="Bu maqsad davri hali boshlanmagan (vaqti kelmagan).",
             )
 
     goal = await update_goal(
