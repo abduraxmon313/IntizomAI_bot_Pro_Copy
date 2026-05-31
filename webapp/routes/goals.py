@@ -187,7 +187,8 @@ async def edit_goal(
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
-    # O'tib ketgan / hali boshlanmagan davr maqsadini bajarilgan deb belgilashni taqiqlaymiz.
+    # Hali boshlanmagan (kelajakdagi) davr maqsadini belgilab bo'lmaydi.
+    # O'tib ketgan davr maqsadlarini esa belgilash MUMKIN.
     if body.completed:
         from bot.models.goal import Goal
         from sqlalchemy import and_, select
@@ -195,11 +196,6 @@ async def edit_goal(
             select(Goal).where(and_(Goal.id == goal_id, Goal.user_id == user.id))
         )
         g0 = res.scalar_one_or_none()
-        if g0 and _is_period_past(g0.goal_type, g0.period):
-            raise HTTPException(
-                status_code=409,
-                detail="O'tib ketgan davr maqsadini belgilab bo'lmaydi.",
-            )
         if g0 and _is_period_future(g0.goal_type, g0.period):
             raise HTTPException(
                 status_code=409,

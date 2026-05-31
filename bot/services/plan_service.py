@@ -6,35 +6,37 @@ from datetime import date, timedelta, datetime
 from bot.config import TIMEZONE
 
 
-def plan_is_due(plan_date, scheduled_time) -> bool:
+def plan_block_reason(plan_date, scheduled_time):
     """
-    Rejani 'bajarildi' deb belgilash mumkinmi (vaqti kelganmi)?
-
-      • O'tib ketgan kun           -> True  (bemalol belgilanadi)
-      • Bugun, vaqtsiz             -> True
-      • Bugun, vaqti kelgan        -> True
-      • Bugun, vaqti hali kelmagan -> False (ogohlantirish)
-      • Kelajak kun                -> False (vaqti kelmagan)
+    Rejani 'bajarildi' deb belgilashga to'siq bormi?
+      • None     -> belgilash mumkin
+      • 'past'   -> kechagi yoki undan oldingi kun (belgilab bo'lmaydi)
+      • 'future' -> kelajak kun yoki bugun vaqti hali kelmagan (vaqti kelmagan)
     """
     now = datetime.now(TIMEZONE)
     today = now.date()
     if plan_date is None:
-        return True
+        return None  # sanasi yo'q -> bugun deb hisoblaymiz, ruxsat
     if plan_date < today:
-        return True
+        return "past"
     if plan_date > today:
-        return False
+        return "future"
     # plan_date == bugun
     if not scheduled_time:
-        return True
+        return None
     try:
         parts = str(scheduled_time).split(":")
         hh = int(parts[0])
         mm = int(parts[1]) if len(parts) > 1 else 0
         due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
-        return now >= due
+        return None if now >= due else "future"
     except Exception:
-        return True
+        return None
+
+
+def plan_is_due(plan_date, scheduled_time) -> bool:
+    """Reja 'bajarildi' deb belgilanishi mumkinmi (hech qanday to'siq yo'qmi)?"""
+    return plan_block_reason(plan_date, scheduled_time) is None
 
 
 
