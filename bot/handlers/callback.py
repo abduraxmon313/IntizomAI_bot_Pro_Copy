@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.plan_service import (
     get_plan_by_id, move_plan_to_tomorrow, duplicate_plan_for_tomorrow,
-    plan_is_due,
+    plan_block_reason,
 )
 from bot.services.score_service import process_plan_result_full
 from bot.services.gamification_service import xp_progress, rank_for_level
@@ -33,9 +33,14 @@ async def done_handler(callback: CallbackQuery, session: AsyncSession):
         await callback.answer("Reja topilmadi!", show_alert=True)
         return
 
-    # Vaqti hali kelmagan rejani bajarildi deb belgilab bo'lmaydi.
-    # (O'tib ketgan kundagilarni esa bemalol belgilash mumkin.)
-    if not plan_is_due(plan.plan_date, plan.scheduled_time):
+    # Kechagi/oldingi kun rejasini, hamda vaqti hali kelmagan rejani belgilab bo'lmaydi.
+    _reason = plan_block_reason(plan.plan_date, plan.scheduled_time)
+    if _reason == "past":
+        await callback.answer(
+            "⏰ O'tib ketgan kundagi rejani belgilab bo'lmaydi.", show_alert=True
+        )
+        return
+    if _reason == "future":
         await callback.answer(
             "⏰ Bu rejaning vaqti hali kelmagan. Vaqti kelgach belgilang.",
             show_alert=True,
