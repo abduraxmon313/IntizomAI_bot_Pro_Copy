@@ -6,6 +6,38 @@ from datetime import date, timedelta, datetime
 from bot.config import TIMEZONE
 
 
+def plan_is_due(plan_date, scheduled_time) -> bool:
+    """
+    Rejani 'bajarildi' deb belgilash mumkinmi (vaqti kelganmi)?
+
+      • O'tib ketgan kun           -> True  (bemalol belgilanadi)
+      • Bugun, vaqtsiz             -> True
+      • Bugun, vaqti kelgan        -> True
+      • Bugun, vaqti hali kelmagan -> False (ogohlantirish)
+      • Kelajak kun                -> False (vaqti kelmagan)
+    """
+    now = datetime.now(TIMEZONE)
+    today = now.date()
+    if plan_date is None:
+        return True
+    if plan_date < today:
+        return True
+    if plan_date > today:
+        return False
+    # plan_date == bugun
+    if not scheduled_time:
+        return True
+    try:
+        parts = str(scheduled_time).split(":")
+        hh = int(parts[0])
+        mm = int(parts[1]) if len(parts) > 1 else 0
+        due = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        return now >= due
+    except Exception:
+        return True
+
+
+
 async def create_plans(session: AsyncSession, user: User, plans_data: list[dict]) -> list[Plan]:
     """GPT dan kelgan plan listni DBga saqlaydi"""
     plans = []

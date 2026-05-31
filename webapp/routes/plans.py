@@ -151,8 +151,7 @@ async def edit_plan(
         from bot.models.plan import Plan, PlanStatus
         from sqlalchemy import and_, select
         from bot.services.gamification_service import set_plan_status
-        from bot.config import TIMEZONE
-        from datetime import datetime as _dt
+        from bot.services.plan_service import plan_is_due
 
         res = await session.execute(
             select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
@@ -161,15 +160,14 @@ async def edit_plan(
         if not plan:
             raise HTTPException(status_code=404, detail="Reja topilmadi")
 
-        # O'TGAN KUN tekshiruvi: faqat "done/failed" deb belgilashda.
-        # ("pending" — belgilashni bekor qilish — har doim ruxsat.)
-        if body.status in ("done", "failed"):
-            today = _dt.now(TIMEZONE).date()
-            if plan.plan_date and plan.plan_date < today:
-                raise HTTPException(
-                    status_code=409,
-                    detail="O'tib ketgan kundagi rejani belgilab bo'lmaydi.",
-                )
+        # VAQT tekshiruvi: vaqti hali kelmagan rejani "bajarildi" deb belgilab
+        # bo'lmaydi. (O'tib ketgan kundagilarni esa bemalol belgilash mumkin;
+        # "pending" — belgilashni bekor qilish — har doim ruxsat.)
+        if body.status == "done" and not plan_is_due(plan.plan_date, plan.scheduled_time):
+            raise HTTPException(
+                status_code=409,
+                detail="Rejaning vaqti hali kelmagan.",
+            )
 
         target = {
             "done": PlanStatus.done,
