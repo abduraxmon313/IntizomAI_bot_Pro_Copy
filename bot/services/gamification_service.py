@@ -279,7 +279,7 @@ async def _check_unlocks(session: AsyncSession, user: User) -> list[Achievement]
 
 
 # ─────────────────────────────────────────────────────────────
-#  PUBLIC: process plan completion
+#  XP recompute (deterministic — no drift across toggles)
 # ─────────────────────────────────────────────────────────────
 async def _recompute_xp_and_score(session: AsyncSession, user: User) -> None:
     """XP va total_score ni BARCHA bajarilgan rejalardan deterministik tiklaydi.
@@ -298,6 +298,75 @@ async def _recompute_xp_and_score(session: AsyncSession, user: User) -> None:
     user.avatar_emoji = emoji
 
 
+# ─────────────────────────────────────────────────────────────
+#  PUBLIC: set plan status (toggle/re-mark) — RELIABLE
+# ─────────────────────────────────────────────────────────────
+async def _run_gamification(user_id: int, became_done: bool) -> CompletionReward:
+    """
+    Gamification hisob-kitobi — ALOHIDA, izolyatsiya qilingan sessiyada.
+    Bu yerda har qanday xato bo'lsa, u request sessiyasiga ta'sir qilmaydi.
+    """
+    out = CompletionReward()
+    from database.db import AsyncSessionLocal
+    async with AsyncSessionLocal() as s:
+        u = await s.get(User, user_id)
+        if u is None:
+            return out
+        out.new_level = u.level or 1
+        out.new_streak = u.streak or 0
+        prev_level = u.level or 1
+
+        if became_done:
+            out.streak_extended = _update_streak_on_complete(u)
+            out.new_streak = u.streak
+        u.last_active = datetime.utcnow()
+
+        await _recompute_xp_and_score(s, u)
+        out.new_level = u.level
+        out.leveled_up = u.level > prev_level
+
+        if became_done:
+            today = _today()
+            pending_today = await s.scalar(
+                select(func.count(Plan.id)).where(
+                    and_(
+                        Plan.user_id == u.id,
+                        Plan.plan_date == today,
+                        Plan.status == PlanStatus.pending,
+                    )
+                )
+            ) or 0
+            total_today = await s.scalar(
+                select(func.count(Plan.id)).where(
+                    and_(Plan.user_id == u.id, Plan.plan_date == today)
+                )
+            ) or 0
+            if total_today >= 2 and pending_today == 0:
+                out.perfect_day = True
+                u.perfect_days = (u.perfect_days or 0) + 1
+                existing = await s.scalar(
+                    select(Achievement).where(
+                        and_(Achievement.user_id == u.id,
+                             Achievement.code == "perfect_day")
+                    )
+                )
+                if not existing:
+                    s.add(Achievement(
+                        user_id=u.id, code="perfect_day",
+                        title="Mukammal kun", icon="✨", rarity="rare",
+                    ))
+                    out.perfect_day = True
+
+        out.discipline_score = await _recompute_discipline_score(s, u)
+
+        if became_done:
+            more = await _check_unlocks(s, u)
+            out.new_unlocks.extend(more)
+
+        await s.commit()
+    return out
+
+
 async def set_plan_status(
     session: AsyncSession,
     user: User,
@@ -305,28 +374,28 @@ async def set_plan_status(
     new_status: PlanStatus,
 ) -> CompletionReward:
     """
-    Rejani istalgan holatga o'tkazadi (pending/done/failed) — toggle va
-    qayta belgilashni qo'llab-quvvatlaydi. Xato bo'lsa ham asosiy status
-    o'zgarishi DARHOL saqlanadi.
+    Rejani istalgan holatga o'tkazadi (pending/done/failed) — toggle/qayta belgilash.
+
+    MAQSADLAR (update_goal) bilan bir xil ishonchli struktura:
+      1-QADAM: statusni o'zgartirish + ScoreLog — request sessiyasida BITTA commit.
+               (sodda va ishonchli, doim muvaffaqiyatli, huddi maqsadlardagidek.)
+      2-QADAM: XP/streak/discipline/achievements — ALOHIDA izolyatsiya qilingan
+               sessiyada. U yerdagi xato request sessiyasiga ta'sir qilmaydi,
+               shuning uchun toggle/belgilash HAR DOIM ishlaydi.
     """
     out = CompletionReward()
     out.new_level = user.level or 1
     out.new_streak = user.streak or 0
+    out.discipline_score = user.discipline_score or 50
 
     if plan.status == new_status:
-        out.discipline_score = user.discipline_score or 50
         return out
 
     became_done = (new_status == PlanStatus.done)
     base = max(1, plan.score_value or 5)
+
+    # ── 1-QADAM: sodda status o'zgarishi (update_goal kabi) ──────────────
     plan.status = new_status
-
-    if became_done:
-        out.streak_extended = _update_streak_on_complete(user)
-        out.new_streak = user.streak
-
-    user.last_active = datetime.utcnow()
-
     if new_status == PlanStatus.done:
         out.xp_gained = base
         out.score_change = base
@@ -340,86 +409,27 @@ async def set_plan_status(
             user_id=user.id, plan_id=plan.id, score_change=-3,
             reason=f"❌ '{plan.title}' bajarilmadi",
         ))
+    await session.commit()
+    await session.refresh(plan)
 
-    # ASOSIY o'zgarishni DARHOL saqlaymiz
+    # ── 2-QADAM: gamification — alohida sessiyada (xato bo'lsa yutiladi) ──
     try:
-        await session.commit()
-    except Exception:
-        await session.rollback()
+        reward = await _run_gamification(user.id, became_done)
+        out.xp_gained = out.xp_gained or reward.xp_gained
+        out.new_level = reward.new_level
+        out.leveled_up = reward.leveled_up
+        out.streak_extended = reward.streak_extended
+        out.new_streak = reward.new_streak
+        out.new_unlocks = reward.new_unlocks
+        out.discipline_score = reward.discipline_score
+        out.perfect_day = reward.perfect_day
+        # request sessiyadagi user'ni yangilab qo'yamiz
         try:
-            res_p = await session.execute(select(Plan).where(Plan.id == plan.id))
-            p2 = res_p.scalar_one_or_none()
-            if p2:
-                p2.status = new_status
-                await session.commit()
+            await session.refresh(user)
         except Exception:
-            await session.rollback()
-        out.discipline_score = user.discipline_score or 50
-        return out
-
-    # BEST-EFFORT: XP/level
-    try:
-        prev_level = user.level or 1
-        await _recompute_xp_and_score(session, user)
-        out.new_level = user.level
-        out.leveled_up = user.level > prev_level
-        await session.commit()
+            pass
     except Exception:
-        await session.rollback()
-
-    # Perfect day (faqat done)
-    if became_done:
-        try:
-            today = _today()
-            pending_today = await session.scalar(
-                select(func.count(Plan.id)).where(
-                    and_(
-                        Plan.user_id == user.id,
-                        Plan.plan_date == today,
-                        Plan.status == PlanStatus.pending,
-                    )
-                )
-            ) or 0
-            total_today = await session.scalar(
-                select(func.count(Plan.id)).where(
-                    and_(Plan.user_id == user.id, Plan.plan_date == today)
-                )
-            ) or 0
-            if total_today >= 2 and pending_today == 0:
-                out.perfect_day = True
-                user.perfect_days = (user.perfect_days or 0) + 1
-                existing = await session.scalar(
-                    select(Achievement).where(
-                        and_(Achievement.user_id == user.id, Achievement.code == "perfect_day")
-                    )
-                )
-                if not existing:
-                    row = Achievement(
-                        user_id=user.id, code="perfect_day",
-                        title="Mukammal kun", icon="✨", rarity="rare",
-                    )
-                    session.add(row)
-                    out.new_unlocks.append(row)
-                await session.commit()
-        except Exception:
-            await session.rollback()
-
-    # Discipline (har doim)
-    try:
-        out.discipline_score = await _recompute_discipline_score(session, user)
-        await session.commit()
-    except Exception:
-        await session.rollback()
-        out.discipline_score = user.discipline_score or 50
-
-    # Achievements (faqat done)
-    if became_done:
-        try:
-            more = await _check_unlocks(session, user)
-            out.new_unlocks.extend(more)
-            await session.commit()
-        except Exception:
-            await session.rollback()
+        pass
 
     return out
 
