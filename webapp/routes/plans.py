@@ -215,6 +215,25 @@ async def remove_plan(
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+
+    # O'tib ketgan kundagi rejani o'chirib bo'lmaydi — adashib o'chirib qo'yib,
+    # keyin qayta belgilab bo'lmay qolmasligi uchun (tarix saqlanadi).
+    from bot.models.plan import Plan
+    from sqlalchemy import and_, select
+    from bot.services.plan_service import plan_block_reason
+
+    res = await session.execute(
+        select(Plan).where(and_(Plan.id == plan_id, Plan.user_id == user.id))
+    )
+    plan = res.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Reja topilmadi")
+    if plan_block_reason(plan.plan_date, plan.scheduled_time) == "past":
+        raise HTTPException(
+            status_code=409,
+            detail="O'tib ketgan kundagi rejani o'chirib bo'lmaydi.",
+        )
+
     ok = await delete_plan_by_id(session, plan_id, user.id)
     if not ok:
         raise HTTPException(status_code=404, detail="Reja topilmadi")
