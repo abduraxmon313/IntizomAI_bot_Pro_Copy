@@ -6,12 +6,13 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import and_, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.config import TIMEZONE
 from webapp.security import resolve_telegram_id
 from bot.models.checkin import DailyCheckin
+from bot.models.plan import Plan, PlanStatus
 from bot.services.coach_service import daily_quest, smart_coach_message
 from bot.services.gamification_service import build_user_snapshot
 from bot.services.user_service import get_user_by_telegram_id
@@ -134,3 +135,42 @@ async def save_checkin(
         checkin_date=str(row.checkin_date),
         mood=row.mood, energy=row.energy,
     )
+
+
+
+# ─────────────────────────────────────────────────────────────
+#  REJALAR TARIXI — har kun uchun bajarilgan/jami (eng yangi tepada)
+# ─────────────────────────────────────────────────────────────
+@router.get("/history")
+async def get_history(
+    telegram_id: int = Depends(resolve_telegram_id),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Foydalanuvchining BUTUN reja tarixi — kun bo'yicha guruhlangan:
+    har bir kun uchun jami reja soni va bajarilgan rejalar soni.
+    Eng yangi kun birinchi (desc). Faqat reja bo'lgan kunlar qaytariladi.
+    """
+    user = await get_user_by_telegram_id(session, telegram_id)
+    if not user:
+        raise HTTPException(404, "Foydalanuvchi topilmadi")
+
+    done_expr = func.sum(
+        case((Plan.status == PlanStatus.done, 1), else_=0)
+    )
+    res = await session.execute(
+        select(Plan.plan_date, func.count(Plan.id), done_expr)
+        .where(Plan.user_id == user.id)
+        .group_by(Plan.plan_date)
+        .order_by(Plan.plan_date.desc())
+    )
+    days = []
+    for plan_date, total, done in res.all():
+        if plan_date is None:
+            continue
+        days.append({
+            "date": str(plan_date),
+            "total": int(total or 0),
+            "done": int(done or 0),
+        })
+    return {"days": days}

@@ -7,7 +7,7 @@ import logging
 
 from bot.services.user_service import get_user_by_telegram_id
 from bot.services.ai_service import transcribe_voice, extract_plans_from_text
-from bot.services.plan_service import create_plans, get_today_plans, get_plan_by_id, delete_plan
+from bot.services.plan_service import create_plans, get_today_plans, get_plan_by_id, delete_plan, plan_block_reason
 from bot.services.premium_service import user_is_premium
 from bot.utils.ratelimit import allow_ai_analysis, seconds_until_reset
 from bot.keyboards.plan_keys import (
@@ -488,6 +488,11 @@ async def delete_plan_handler(callback: CallbackQuery, session: AsyncSession):
     plan = await get_plan_by_id(session, plan_id)
 
     if plan:
+        if plan_block_reason(plan.plan_date, plan.scheduled_time) == "past":
+            await callback.answer(
+                "⏰ O'tib ketgan kundagi rejani o'chirib bo'lmaydi.", show_alert=True
+            )
+            return
         await delete_plan(session, plan)
         await callback.answer("🗑 O'chirildi!", show_alert=True)
 
